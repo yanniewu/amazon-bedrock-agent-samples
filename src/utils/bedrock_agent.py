@@ -23,15 +23,19 @@ associating them with Guardrails, Knowledge Bases, and Tools.
 The SupervisorAgent class enables creating Agents that can collaborate with other sub-agents, with options
 for specifying collaboration types, routing classifiers, and instructions.
 """
+import zipfile
+from io import BytesIO
 
 import boto3
+from botocore.exceptions import ClientError
 import uuid
 from textwrap import dedent
-from typing import List, Dict
+from typing import List, Dict, Optional
 import time
 from dataclasses import dataclass
 from typing import Self
 from enum import Enum
+from pathlib import Path
 from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
 from types import SimpleNamespace
 
@@ -196,8 +200,128 @@ class Tool:
         return {
             "name":  self.name,
             "description": self.description,
-            "parameters": self.schema.to_dict()
+            "parameters": self.schema
         }
+
+
+class Toolbox:
+    """Manages a collection of tools that can be used by Bedrock agents"""
+
+    def __init__(self, table_name: str = "bedrock_agent_tools"):
+        """Initialize the Toolbox with DynamoDB connection"""
+        self.dynamodb = boto3.resource('dynamodb')
+        self.table_name = table_name
+        self.table = self.dynamodb.Table(table_name)
+
+    @classmethod
+    def create_table(cls, table_name: str = "bedrock_agent_tools") -> None:
+        """Create the DynamoDB table for storing tools
+
+        Args:
+            table_name: Name of the table to create
+            region: AWS region for the table
+        """
+        dynamodb = boto3.resource('dynamodb')
+        try:
+            table = dynamodb.create_table(
+                TableName=table_name,
+                KeySchema=[
+                    {'AttributeName': 'tool_name', 'KeyType': 'HASH'}
+                ],
+                AttributeDefinitions=[
+                    {'AttributeName': 'tool_name', 'AttributeType': 'S'}
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+            )
+            table.wait_until_exists()
+        except ClientError as e:
+            if e.response['Error']['Code'] != 'ResourceInUseException':
+                raise
+
+    def register_tool(self,
+                      tool_name: str,
+                      tool_code_or_arn: str,
+                      tool_definition: Dict,
+                      description: str = None) -> None:
+        """Register a new tool in the toolbox, making it available by name to all agents"""
+        tool_item = {
+            'tool_name': tool_name,
+            'tool_code': tool_code_or_arn,
+            'tool_definition': tool_definition,
+            'description': description or tool_definition.get('description', '')
+        }
+
+        # If tool record already exists in the table, update it
+        existing_tool = self.get_tool(tool_name)
+        if existing_tool:
+            existing_tool.update(tool_item)       # Override with new values
+            self.table.put_item(Item=existing_tool)
+            return
+
+        try:
+            # Check if the code file exists (it may also contain an ARN for a lambda)
+            if tool_code_or_arn.startswith('arn:'):
+                # Validate that the lambda exists
+                try:
+                    boto3.client('lambda').get_function(FunctionName=tool_code_or_arn)
+
+                except Exception as e:
+                    raise ValueError(f"Lambda function not found: {tool_code_or_arn}")
+            else:
+                raise NotImplementedError("Currently only registering existing lambdas is supported")
+
+            self.table.put_item(Item=tool_item)
+        except ClientError as e:
+            raise Exception(f"Failed to register tool: {str(e)}")
+
+    def get_tool(self, tool_name: str) -> Optional[Tool]:
+        """Retrieve a tool by name"""
+        try:
+            response = self.table.get_item(Key={'tool_name': tool_name})
+            item = response.get('Item')
+            if item is None:
+                return None
+            name = item['tool_name']
+            description = item['description']
+            code = item['tool_code']
+            schema = item['tool_definition']
+            return Tool.create(name, code, schema, description)
+
+        except ClientError as e:
+            raise Exception(f"Failed to retrieve tool: {str(e)}")
+
+    def list_tools(self) -> List[Dict]:
+        """List all available tools"""
+        try:
+            response = self.table.scan()
+            return response.get('Items', [])
+        except ClientError as e:
+            raise Exception(f"Failed to list tools: {str(e)}")
+
+    def unregister_tool(self, tool_name: str) -> None:
+        """Delete a tool from the toolbox"""
+        try:
+            # First verify the item exists
+            response = self.table.get_item(Key={'tool_name': tool_name})
+            if 'Item' not in response:
+                raise Exception(f"Tool '{tool_name}' not found in table")
+
+            # Delete the item
+            response = self.table.delete_item(
+                Key={'tool_name': tool_name},
+                # Add ReturnValues to confirm deletion
+                ReturnValues='ALL_OLD'
+            )
+
+            # Verify deletion was successful
+            if 'Attributes' not in response:
+                raise Exception(f"Tool '{tool_name}' deletion failed - no confirmation returned")
+
+        except ClientError as e:
+            raise Exception(f"Failed to delete tool: {str(e)}")
 
 
 class Task:
@@ -235,6 +359,8 @@ class Task:
 # define an Agent class to simplify creating and using an agent
 class Agent:
     default_force_recreate: bool = False
+    NO_TOOL_USE_INSTRUCTION = "\nYou have no available tools. Rely only on your own knowledge."
+    TOOL_USE_INSTRUCTION = ""  # Agentic models are already biased to use tools if available
 
     @classmethod
     def set_force_recreate_default(cls, force_recreate: bool):
@@ -327,9 +453,7 @@ class Agent:
             # add workaround in instructions, since default prompts can yield hallucinations for tool use calls
             # if self.tool_code is None and self.tool_defs is None:
             if tools is None and self.tool_code is None and self.tool_defs is None:
-                self.instructions += (
-                    "\nYou have no available tools. Rely only on your own knowledge."
-                )
+                self.instructions += Agent.NO_TOOL_USE_INSTRUCTION
 
             (self.agent_id, self.agent_alias_id, self.agent_alias_arn) = (
                 agents_helper.create_agent(
@@ -457,6 +581,8 @@ class Agent:
     def add_file_to_session_state(
         cls, file_name, use_case="CODE_INTERPRETER", session_state=None
     ):
+        """Add a file to the session state"""
+        use_case = use_case.upper()
         if use_case != "CHAT" and use_case != "CODE_INTERPRETER":
             raise ValueError("Use case must be either 'CHAT' or 'CODE_INTERPRETER'")
         if not session_state:
@@ -504,6 +630,7 @@ class Agent:
         code_interpreter: bool = False,
         verbose: bool = False,
     ):
+        """Create an agent, or attach to an existing one"""
         _yaml_content = {
             name: {
                 "role": role,
@@ -526,6 +653,13 @@ class Agent:
             verbose=verbose,
         )
 
+    def update(self,
+               new_model_id: str = None,
+               new_instructions: str = None,
+               guardrail_id: str = None) -> None:
+        """Update supplied values for the agent"""
+        agents_helper.update_agent(self.name, new_model_id, new_instructions, guardrail_id)
+
     def invoke(
         self,
         input_text: str,
@@ -535,6 +669,7 @@ class Agent:
         trace_level: str = "none",
         multi_agent_names: dict = {},
     ):
+        """Invoke the agent with the given input text"""
         return agents_helper.invoke(
             input_text,
             self.agent_id,
@@ -615,6 +750,15 @@ class Agent:
 
     def attach_tool(self, tool: Tool) -> None:
         """Attach a tool to this agent."""
+        # Check if the agent's instructions say to not use tools. If so, we will rewrite them.
+        instructions = agents_helper.get_agent_instructions_by_name(self.name)
+        if Agent.NO_TOOL_USE_INSTRUCTION in instructions:
+            print(f"Replacing instructions to not use tools...")
+            instructions = instructions.replace(
+                Agent.NO_TOOL_USE_INSTRUCTION, Agent.TOOL_USE_INSTRUCTION
+            )
+            self.update(new_instructions=instructions)
+
         # add_action_group_with_lambda() doesn't check if the lambda already exists, we need to
         if self.has_action_group(tool.name):
             print(f"Action group {tool.name} already exists, skipping...")

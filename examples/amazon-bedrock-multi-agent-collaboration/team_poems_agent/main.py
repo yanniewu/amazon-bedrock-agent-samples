@@ -4,17 +4,13 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
 import argparse
 import yaml
 import datetime
-import sys
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, account_id, region, agents_helper
 import uuid
 import os
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, Toolbox, agents_helper
 
 
 # Get the directory containing your script
@@ -127,39 +123,12 @@ def main(args):
         with open(agent_yaml_path, "r") as file:
             yaml_content = yaml.safe_load(file)
 
-        sports_research_agent = Agent(
-            "sports_research_agent",
-            yaml_content,
-            tool_code=f"arn:aws:lambda:{region}:{account_id}:function:web_search",
-            tool_defs=[
-                {
-                    "name": "web_search",
-                    "description": "Searches the web for information",
-                    "parameters": {
-                        "search_query": {
-                            "description": "The query to search the web with",
-                            "type": "string",
-                            "required": True,
-                        },
-                        "target_website": {
-                            "description": "The specific website to search including its domain name. If not provided, the most relevant website will be used",
-                            "type": "string",
-                            "required": False,
-                        },
-                        "topic": {
-                            "description": "The topic being searched. 'news' or 'general'. Helps narrow the search when news is the focus.",
-                            "type": "string",
-                            "required": False,
-                        },
-                        "days": {
-                            "description": "The number of days of history to search. Helps when looking for recent events or news.",
-                            "type": "string",
-                            "required": False,
-                        },
-                    },
-                }
-            ],
-        )
+        print("\n\nCreating sub-agent: sports_research_agent...\n\n")
+
+        sports_research_agent = Agent("sports_research_agent", yaml_content)
+        toolbox = Toolbox()
+        tool = toolbox.get_tool("web_search")
+        sports_research_agent.attach_tool(tool)
         sports_poetry_writer = Agent("sports_poetry_writer", yaml_content)
 
         print("\n\nCreating supervisor agent...\n\n")
