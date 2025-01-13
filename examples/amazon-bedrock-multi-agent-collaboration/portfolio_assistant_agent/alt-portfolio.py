@@ -57,7 +57,7 @@ def main(args):
             goal="Fetch latest relevant news for a given stock based on a ticker.",
             instructions="Top researcher in financial markets and company announcements."
         )
-        # Imperatively define and attach a the web search tool
+        # Imperatively define and attach the web search tool (we could also do this by name if it were shared)
         tool_code = f"arn:aws:lambda:{region}:{account_id}:function:web_search"
         schema = ParameterSchema.create()
         schema.add_param("search_query", ParamType.STRING, "The query to search the web with", True)

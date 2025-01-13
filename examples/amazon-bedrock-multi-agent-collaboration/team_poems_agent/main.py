@@ -126,9 +126,7 @@ def main(args):
         print("\n\nCreating sub-agent: sports_research_agent...\n\n")
 
         sports_research_agent = Agent("sports_research_agent", yaml_content)
-        toolbox = Toolbox()
-        tool = toolbox.get_tool("web_search")
-        sports_research_agent.attach_tool(tool)
+        sports_research_agent.attach_tool_by_name("web_search")
         sports_poetry_writer = Agent("sports_poetry_writer", yaml_content)
 
         print("\n\nCreating supervisor agent...\n\n")

@@ -89,7 +89,7 @@ response = news_agent.invoke(
 print(response)
 ```
 
-## Usage with Toolbox
+## Usage with the Toolbox
 ```python
 import uuid
 from src.utils.bedrock_agent import Agent, Tool, Toolbox
@@ -100,9 +100,7 @@ news_agent = Agent.direct_create(
     goal="Fetch latest relevant news for a given stock based on a ticker.",
     instructions="Top researcher in financial markets and company announcements."
 )
-toolbox = Toolbox()
-tool = toolbox.get_tool("web_search")
-news_agent.attach_tool(tool)
+news_agent.attach_tool_by_name("web_search")
 
 response = news_agent.invoke(
     input_text="What is the stock trend for AMZN?",

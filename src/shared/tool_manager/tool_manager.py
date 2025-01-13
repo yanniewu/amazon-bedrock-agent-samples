@@ -9,27 +9,24 @@ from src.utils.bedrock_agent import Toolbox
 
 
 @click.group()
-@click.option('--table-name', required=False, default='bedrock_agent_tools', help='DynamoDB table name')
+@click.option('--table-name', required=False, default=Toolbox.DEFAULT_TABLE_NAME, help='DynamoDB table name')
 @click.option('--region', default='us-west-2', help='AWS region')
 def cli(table_name, region):
     """Tool Manager - manages lambda tools for use with (potentially many) Bedrock Agents"""
-    # Create the toolbox instance
-    toolbox = Toolbox(table_name=table_name)
-    # Store it in the context
     ctx = click.get_current_context()
-    ctx.obj = {'toolbox': toolbox}
     # If region isn't specified, get the current region from boto3
     if region is None:
         region = boto3.Session().region_name
-    ctx.obj['toolbox'].region = region
-    ctx.obj['toolbox'].account = boto3.client("sts").get_caller_identity()["Account"]
+    ctx.obj['region'] = region
+    ctx.obj['table_name'] = table_name
+    ctx.obj['account'] = boto3.client("sts").get_caller_identity()["Account"]
 
 
 @cli.command()
 @click.pass_context
 def create_table(ctx):
     """Create DynamoDB table for storing tool registration (default: bedrock_agent_tools)"""
-    ctx.obj['toolbox'].create_table()
+    Toolbox.create_table(ctx.obj['table_name'])
     click.echo(f"Table created successfully")
 
 
@@ -37,7 +34,7 @@ def create_table(ctx):
 @click.pass_context
 def delete_table(ctx):
     """Delete DynamoDB table for tools"""
-    ctx.obj['toolbox'].delete_table()
+    Toolbox.delete_table(ctx.obj['table_name'])
     click.echo(f"Table deleted successfully")
 
 
@@ -62,11 +59,11 @@ def register(ctx, source):
                 raise ValueError("Each tool definition must contain a 'name' field")
 
             # replace {region} and {account} in the code field
-            tool_source['code'] = tool_source['code'].replace('{region}', ctx.obj['toolbox'].region)
-            tool_source['code'] = tool_source['code'].replace('{account_id}', ctx.obj['toolbox'].account)
+            tool_source['code'] = tool_source['code'].replace('{region}', ctx.obj['region'])
+            tool_source['code'] = tool_source['code'].replace('{account_id}', ctx.obj['account'])
 
             # Register individual tool
-            ctx.obj['toolbox'].register_tool(
+            Toolbox.register_tool(
                 tool_name=tool_def['name'],
                 tool_code_or_arn=tool_source['code'],
                 tool_definition=tool_def.get('parameters', ''),
@@ -86,7 +83,7 @@ def register(ctx, source):
 @click.pass_context
 def list_tools(ctx):
     """List all registered tools"""
-    tools = ctx.obj['toolbox'].list_tools()
+    tools = Toolbox.list_tools(ctx.obj['table_name'])
     for tool in tools:
         click.echo(f"\nTool: {tool['tool_name']}")
         click.echo(f"Description: {tool['description']}")
@@ -99,12 +96,12 @@ def list_tools(ctx):
 def unregister(ctx, name):
     """Unregister a specific tool"""
     # Check if the tool exists
-    tool = ctx.obj['toolbox'].get_tool(name)
+    tool = Toolbox.get_tool(name, ctx.obj['table_name'])
     if not tool:
         click.echo(f"Tool '{name}' not found")
         return
     # Delete the tool from the Toolbox
-    ctx.obj['toolbox'].unregister_tool(name)
+    Toolbox.unregister_tool(name, ctx.obj['table_name'])
     print(f"Tool {name} unregistered from toolbox")
 
 
@@ -113,7 +110,7 @@ def unregister(ctx, name):
 @click.pass_context
 def get(ctx, name):
     """Get details for a specific tool"""
-    tool = ctx.obj['toolbox'].get_tool(name)
+    tool = Toolbox.get_tool(name, ctx.obj['table_name'])
     if tool:
         click.echo(json.dumps(tool, indent=2))
     else:

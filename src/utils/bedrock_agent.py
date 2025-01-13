@@ -206,15 +206,21 @@ class Tool:
 
 class Toolbox:
     """Manages a collection of tools that can be used by Bedrock agents"""
+    DEFAULT_TABLE_NAME = "bedrock_agent_tools"
 
-    def __init__(self, table_name: str = "bedrock_agent_tools"):
-        """Initialize the Toolbox with DynamoDB connection"""
-        self.dynamodb = boto3.resource('dynamodb')
-        self.table_name = table_name
-        self.table = self.dynamodb.Table(table_name)
+    def __init__(self):
+        pass
 
     @classmethod
-    def create_table(cls, table_name: str = "bedrock_agent_tools") -> None:
+    def _connect(cls, table_name: str=None):
+        """Connect to DynamoDB table"""
+        if table_name is None:
+            table_name = Toolbox.DEFAULT_TABLE_NAME
+        dynamodb = boto3.resource('dynamodb')
+        return dynamodb.Table(table_name)
+
+    @classmethod
+    def create_table(cls, table_name: str = DEFAULT_TABLE_NAME) -> None:
         """Create the DynamoDB table for storing tools
 
         Args:
@@ -241,11 +247,32 @@ class Toolbox:
             if e.response['Error']['Code'] != 'ResourceInUseException':
                 raise
 
-    def register_tool(self,
+    @classmethod
+    def _table_exists(cls, table_name: str):
+        """Check that the table exists (internal)"""
+        dynamodb = boto3.resource('dynamodb')
+        try:
+            table = dynamodb.Table(table_name)
+            table.load()
+            return True
+        except dynamodb.meta.client.exceptions.ResourceNotFoundException:
+            return False
+
+    @classmethod
+    def _ensure_table_exists(cls, table_name: str):
+        """Verify that the table exists; create it if it doesn't"""
+        if not Toolbox._table_exists(table_name):
+            print(f"Table {table_name} does not exist. Creating it...")
+            Toolbox.create_table(table_name)
+            print(f"Table {table_name} created successfully!")
+
+    @classmethod
+    def register_tool(cls,
                       tool_name: str,
                       tool_code_or_arn: str,
                       tool_definition: Dict,
-                      description: str = None) -> None:
+                      description: str = None,
+                      table_name = DEFAULT_TABLE_NAME) -> None:
         """Register a new tool in the toolbox, making it available by name to all agents"""
         tool_item = {
             'tool_name': tool_name,
@@ -253,12 +280,15 @@ class Toolbox:
             'tool_definition': tool_definition,
             'description': description or tool_definition.get('description', '')
         }
+        Toolbox._ensure_table_exists(table_name)
+        table = Toolbox._connect(table_name)
 
         # If tool record already exists in the table, update it
-        existing_tool = self.get_tool(tool_name)
+        existing_tool = table.get_item(Key={'tool_name': tool_name}).get('Item')
+
         if existing_tool:
             existing_tool.update(tool_item)       # Override with new values
-            self.table.put_item(Item=existing_tool)
+            table.put_item(Item=existing_tool)
             return
 
         try:
@@ -273,14 +303,16 @@ class Toolbox:
             else:
                 raise NotImplementedError("Currently only registering existing lambdas is supported")
 
-            self.table.put_item(Item=tool_item)
+            table.put_item(Item=tool_item)
         except ClientError as e:
             raise Exception(f"Failed to register tool: {str(e)}")
 
-    def get_tool(self, tool_name: str) -> Optional[Tool]:
+    @classmethod
+    def get_tool(cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME) -> Optional[Tool]:
         """Retrieve a tool by name"""
         try:
-            response = self.table.get_item(Key={'tool_name': tool_name})
+            table = Toolbox._connect(table_name)
+            response = table.get_item(Key={'tool_name': tool_name})
             item = response.get('Item')
             if item is None:
                 return None
@@ -293,24 +325,28 @@ class Toolbox:
         except ClientError as e:
             raise Exception(f"Failed to retrieve tool: {str(e)}")
 
-    def list_tools(self) -> List[Dict]:
+    @classmethod
+    def list_tools(cls, table_name: str = DEFAULT_TABLE_NAME) -> List[Dict]:
         """List all available tools"""
         try:
-            response = self.table.scan()
+            table = Toolbox._connect(table_name)
+            response = table.scan()
             return response.get('Items', [])
         except ClientError as e:
             raise Exception(f"Failed to list tools: {str(e)}")
 
-    def unregister_tool(self, tool_name: str) -> None:
+    @classmethod
+    def unregister_tool(self, tool_name: str, table_name: str = DEFAULT_TABLE_NAME) -> None:
         """Delete a tool from the toolbox"""
         try:
             # First verify the item exists
-            response = self.table.get_item(Key={'tool_name': tool_name})
+            table = Toolbox._connect(table_name)
+            response = table.get_item(Key={'tool_name': tool_name})
             if 'Item' not in response:
                 raise Exception(f"Tool '{tool_name}' not found in table")
 
             # Delete the item
-            response = self.table.delete_item(
+            response = table.delete_item(
                 Key={'tool_name': tool_name},
                 # Add ReturnValues to confirm deletion
                 ReturnValues='ALL_OLD'
@@ -322,6 +358,17 @@ class Toolbox:
 
         except ClientError as e:
             raise Exception(f"Failed to delete tool: {str(e)}")
+
+    @classmethod
+    def delete_table(cls, table_name: str = DEFAULT_TABLE_NAME) -> None:
+        """Delete the DynamoDB table for storing tools"""
+        try:
+            table = Toolbox._connect(table_name)
+            table.delete()
+            table.wait_until_not_exists()
+        except ClientError as e:
+            if e.response['Error']['Code'] != 'ResourceNotFoundException':
+                raise
 
 
 class Task:
@@ -775,6 +822,10 @@ class Agent:
         )
         # self._status = Agent.Status.NOT_PREPARED  # Force preparation on next invoke
 
+    def attach_tool_by_name(self, tool_name: str, table_name = None):
+        """Attach a Tool from the toolbox to this agent. The Tool ust be registered in the Toolbox"""
+        tool = Toolbox.get_tool(tool_name, table_name)
+        self.attach_tool(tool)
 
 # define a SupervisorAgent class that has a list of Agents, and some instructions
 class SupervisorAgent:
