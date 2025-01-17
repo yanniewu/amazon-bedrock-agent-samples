@@ -4,25 +4,21 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task
-from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
 import argparse
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task
 
-agents_helper = AgentsForAmazonBedrock()
 
 def main(args):
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="hello_world_supervisor", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("hello_world_supervisor", verbose=True)
     
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="hello_world_supervisor", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="hello_world_sub_agent", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("hello_world_supervisor", verbose=True)
+        Agent.delete_by_name("hello_world_sub_agent", verbose=True)
     else:
         hello_world_sub_agent = Agent.direct_create(
             "hello_world_sub_agent",

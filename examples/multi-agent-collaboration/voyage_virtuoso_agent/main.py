@@ -4,15 +4,11 @@
 # This file is AWS Content and may not be duplicated or distributed without permission
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, account_id, region
-from src.utils.bedrock_agent_helper import AgentsForAmazonBedrock
 import datetime
 import argparse
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, account_id, region
 
-agents_helper = AgentsForAmazonBedrock()
 
 def main(args):
     # User input for travel preferences
@@ -24,11 +20,11 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="voyage_virtuoso", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("voyage_virtuoso", verbose=True)
 
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="voyage_virtuoso", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="travel_agent", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("voyage_virtuoso", verbose=True)
+        Agent.delete_by_name("travel_agent", verbose=True)
     else:
         # Define the Task
         travel_recommendation_task = Task.direct_create(

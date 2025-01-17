@@ -2,21 +2,16 @@
 
 import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
-from src.utils.bedrock_agent import Agent, SupervisorAgent, agents_helper
-
 import time
 import os
 import argparse
 import boto3
 from textwrap import dedent
-
-from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
-
 import logging
 import uuid
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
+from src.utils.bedrock_agent import Agent, SupervisorAgent
+from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
 
 kb_helper = KnowledgeBasesForAmazonBedrock()
 
@@ -28,25 +23,25 @@ logger = logging.getLogger(__name__)
 
 
 def upload_directory(path, bucket_name):
-        for root,dirs,files in os.walk(path):
-            for file in files:
-                file_to_upload = os.path.join(root,file)
-                dest_key = f"{path}/{file}"
-                print(f"uploading file {file_to_upload} to {bucket_name}")
-                s3_client.upload_file(file_to_upload,bucket_name,dest_key)
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            file_to_upload = os.path.join(root, file)
+            dest_key = f"{path}/{file}"
+            print(f"uploading file {file_to_upload} to {bucket_name}")
+            s3_client.upload_file(file_to_upload, bucket_name, dest_key)
 
 
 def main(args):
     if args.clean_up == "true":
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent("mortgages_assistant", verbose=True)
+        Agent.delete_by_name("mortgages_assistant", verbose=True)
         kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
         return
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent("mortgages_assistant", verbose=True)
+        Agent.delete_by_name("mortgages_assistant", verbose=True)
         # kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
 
     bucket_name = None
@@ -196,7 +191,7 @@ History is returned as a list of objects, where each object contains the date an
                                 }
                             ],
                             llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-                            code_interpreter=True, # lets us do mortgage calcs accurately
+                            code_interpreter=True,  # lets us do mortgage calcs accurately
                             verbose=False
                             )
 
@@ -235,7 +230,6 @@ History is returned as a list of objects, where each object contains the date an
                                                       general_mortgage_questions],
                                 llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
                                 verbose=False)
-    
 
     if args.recreate_agents == "false":
         print("\n\nInvoking supervisor agent...\n\n")
@@ -266,4 +260,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args)
-

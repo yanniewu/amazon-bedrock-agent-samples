@@ -2,16 +2,16 @@
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 import argparse
 import logging
 import os
 import time
 import uuid
 import boto3
-from src.utils.bedrock_agent import Agent, SupervisorAgent, agents_helper, Tool, ParameterSchema, ParamType
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Tool, ParameterSchema, ParamType
 from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
 from textwrap import dedent
+sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
 kb_helper = KnowledgeBasesForAmazonBedrock()
 s3_client = boto3.client('s3')
@@ -36,7 +36,7 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent("mortgages_assistant", verbose=True)
+        Agent.delete_by_name("mortgages_assistant", verbose=True)
         # kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
 
     # Create an S3 bucket name from 'mortgage-' + account number

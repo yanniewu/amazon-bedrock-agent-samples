@@ -827,6 +827,20 @@ class Agent:
         tool = Toolbox.get_tool(tool_name, table_name)
         self.attach_tool(tool)
 
+    def delete(self, verbose: bool = False):
+        """Delete the agent"""
+        agents_helper.delete_agent(self.name, delete_role_flag=True, verbose=verbose)
+
+    @classmethod
+    def delete_by_name(cls, agent_name: str, verbose: bool = False):
+        """Delete the agent by name"""
+        agents_helper.delete_agent(agent_name, delete_role_flag=True, verbose=verbose)
+
+    @classmethod
+    def exists(cls, agent_name: str):
+        return agents_helper.get_agent_id_by_name(agent_name) is not None
+
+
 # define a SupervisorAgent class that has a list of Agents, and some instructions
 class SupervisorAgent:
     def __init__(
@@ -921,7 +935,7 @@ class SupervisorAgent:
                     print(f"multi_agent_names: {self.multi_agent_names}")
             except Exception as e:
                 print(f"Error finding existing supervisor agent: {e}")
-                pass
+                raise
             return
 
         # associate sub-agents / collaborators to the supervisor

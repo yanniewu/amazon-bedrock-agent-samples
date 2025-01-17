@@ -10,7 +10,7 @@ import datetime
 import uuid
 import os
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from src.utils.bedrock_agent import Agent, SupervisorAgent, Task, Toolbox, agents_helper
+from src.utils.bedrock_agent import Agent, SupervisorAgent, Task
 
 
 # Get the directory containing your script
@@ -88,11 +88,11 @@ def main(args):
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent(agent_name="sports_team_poet", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("sports_team_poet", verbose=True)
     if args.clean_up == "true":
-        agents_helper.delete_agent(agent_name="sports_team_poet", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="sports_research_agent", delete_role_flag=True, verbose=True)
-        agents_helper.delete_agent(agent_name="sports_poetry_writer", delete_role_flag=True, verbose=True)
+        Agent.delete_by_name("sports_team_poet", verbose=True)
+        Agent.delete_by_name("sports_research_agent", verbose=True)
+        Agent.delete_by_name("sports_poetry_writer", verbose=True)
 
     else:
         with open(task_yaml_path, "r") as file:
