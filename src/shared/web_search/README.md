@@ -44,7 +44,7 @@ from src.utils.bedrock_agent import (
 )
 import uuid
 
-news_agent = Agent.direct_create(
+news_agent = Agent.create(
     name="news_agent",
     role="Market News Researcher",
     goal="Fetch latest relevant news for a given stock based on a ticker.",
@@ -90,11 +90,12 @@ print(response)
 ```
 
 ## Usage with the Toolbox
+
 ```python
 import uuid
 from src.utils.bedrock_agent import Agent, Tool, Toolbox
 
-news_agent = Agent.direct_create(
+news_agent = Agent.create(
     name="news_agent",
     role="Market News Researcher",
     goal="Fetch latest relevant news for a given stock based on a ticker.",

@@ -27,6 +27,17 @@
                     "required": false
                 }
             }
+        },
+        {
+            "name": "get_mortgage_app_doc_status",
+            "description": "Retrieves the list of required documents for a mortgage application in process, along with their respectiv statuses (COMPLETED or MISSING). The function takes a customer ID, but it is purely optional. The funciton implementation can retrieve it from session state instead. This function returns a list of objects, where each object represents a required document type. The required document types for a mortgage application are: proof of income, employment information, proof of assets, and credit information. Each object in the returned list contains the type of the required document and its corresponding status.",
+            "parameters": {
+                "customer_id": {
+                    "description": "The unique identifier of the customer whose mortgage application document status is to be retrieved.",
+                    "type": "string",
+                    "required": false
+                }
+            }
         }
     ]
 }

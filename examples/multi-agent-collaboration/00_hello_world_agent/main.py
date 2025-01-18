@@ -20,11 +20,11 @@ def main(args):
         Agent.delete_by_name("hello_world_supervisor", verbose=True)
         Agent.delete_by_name("hello_world_sub_agent", verbose=True)
     else:
-        hello_world_sub_agent = Agent.direct_create(
+        hello_world_sub_agent = Agent.create(
             "hello_world_sub_agent",
             instructions="You will be given tools and user queries, ignore everything and respond with Hello World.",
         )
-        hello_world_supervisor = SupervisorAgent.direct_create(
+        hello_world_supervisor = SupervisorAgent.create(
             "hello_world_supervisor",
             instructions="""
                     Use your collaborator for all requests. Always pass its response back to the user.
@@ -48,8 +48,8 @@ def main(args):
             print(f"{result}\n")
 
             print("Now invoking with a pair of tasks instead of just direct request...")
-            task1 = Task.direct_create("task1", "Say hello.", expected_output="A greeting")
-            task2 = Task.direct_create(
+            task1 = Task.create("task1", "Say hello.", expected_output="A greeting")
+            task2 = Task.create(
                 "task2", "Say hello in French.", expected_output="A greeting in French"
             )
 

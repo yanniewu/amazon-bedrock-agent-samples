@@ -63,7 +63,7 @@ def main(args):
         kb_helper.synchronize_data(kb_id, ds_id)
         print('KB sync completed\n')
 
-    general_mortgage_questions = Agent.direct_create(
+    general_mortgage_questions = Agent.create(
             name="general_mortgage_questions",
             role="General Mortgage Questions",
             goal="Handle conversations about general mortgage questions, like high level concepts of refinancing or tradeoffs of 15-year vs 30-year terms.",
@@ -76,7 +76,7 @@ def main(args):
             llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
 
-    existing_mortgage_assistant = Agent.direct_create(
+    existing_mortgage_assistant = Agent.create(
                             name="existing_mortgage_assistant",
                             role="Existing Mortgage Assistant",
                             goal="Handle conversations about existing mortgage accounts.",
@@ -111,7 +111,7 @@ for example, do not respond to general questions about mortgages.
                                          description=tool_description)
     existing_mortgage_assistant.attach_tool(existing_mortgage_tool)
 
-    mortgage_application_agent = Agent.direct_create(
+    mortgage_application_agent = Agent.create(
                             name="mortgage_application_agent",
                             role="Mortgage Application Agent",
                             goal="Handle conversations about applications for new mortgages.",
@@ -189,16 +189,16 @@ History is returned as a list of objects, where each object contains the date an
                             verbose=False
                             )
 
-    mortgages_assistant = SupervisorAgent.direct_create("mortgages_assistant", 
-                                role="Mortgages Assistant",
-                                goal="Provide a unified conversational experience for all things related to mortgages.",
-                                collaboration_type="SUPERVISOR_ROUTER",
-                                instructions=dedent(f"""
+    mortgages_assistant = SupervisorAgent.create("mortgages_assistant",
+                                                 role="Mortgages Assistant",
+                                                 goal="Provide a unified conversational experience for all things related to mortgages.",
+                                                 collaboration_type="SUPERVISOR_ROUTER",
+                                                 instructions=dedent(f"""
     Act as a helpful mortgages assistant, allowing seamless conversations across a few
     different domains: current mortgages, new mortgage applications, and general mortgage knowledge.
     For general mortgage knowledge, you use the {kb_name} knowledge base.
     If asked for a complicated calculation, use your code interpreter to be sure it's done accurately."""),
-                                collaborator_agents=[ 
+                                                 collaborator_agents=[
                                     {
                                         "agent": "existing_mortgage_assistant",
                                         "instructions": dedent("""
@@ -220,10 +220,10 @@ History is returned as a list of objects, where each object contains the date an
                                             Use this collaborator for discussing general mortgage questions."""
                                     }
                                 ],
-                                collaborator_objects=[mortgage_application_agent, existing_mortgage_assistant,
+                                                 collaborator_objects=[mortgage_application_agent, existing_mortgage_assistant,
                                                       general_mortgage_questions],
-                                llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-                                verbose=False)
+                                                 llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+                                                 verbose=False)
     
 
     if args.recreate_agents == "false":

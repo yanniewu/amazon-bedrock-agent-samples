@@ -27,7 +27,7 @@ def main(args):
         Agent.delete_by_name("travel_agent", verbose=True)
     else:
         # Define the Task
-        travel_recommendation_task = Task.direct_create(
+        travel_recommendation_task = Task.create(
             "travel_recommendation_task",
             description=f"Research and recommend suitable travel destinations based on the user's dream vacation: {user_input['voyage']}",
             expected_output="A list of recommended destinations with brief descriptions.",
@@ -35,7 +35,7 @@ def main(args):
         )
 
         # Define the Agent
-        travel_agent = Agent.direct_create(
+        travel_agent = Agent.create(
             "travel_agent",
             role="Travel Destination Researcher",
             goal="Find destinations matching user preferences",
@@ -70,7 +70,7 @@ def main(args):
             ],
         )
 
-        voyage_virtuoso = SupervisorAgent.direct_create(
+        voyage_virtuoso = SupervisorAgent.create(
             "voyage_virtuoso",
             role="Voyage Virtuoso",
             goal="Plan the ultimate vacation for someone with a large budget given their preferences",

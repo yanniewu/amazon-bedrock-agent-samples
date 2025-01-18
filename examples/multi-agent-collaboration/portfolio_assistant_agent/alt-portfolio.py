@@ -51,7 +51,7 @@ def main(args):
         )
 
         # Define News Agent
-        news_agent = Agent.direct_create(
+        news_agent = Agent.create(
             name="news_agent",
             role="Market News Researcher",
             goal="Fetch latest relevant news for a given stock based on a ticker.",
@@ -73,7 +73,7 @@ def main(args):
         news_agent.prepare()
 
         # Define Stock Data Agent
-        stock_data_agent = Agent.direct_create(
+        stock_data_agent = Agent.create(
             name="stock_data_agent",
             role="Financial Data Collector",
             goal="Retrieve accurate stock trends for a given ticker.",
@@ -95,7 +95,7 @@ def main(args):
         )
 
         # Define Analyst Agent
-        analyst_agent = Agent.direct_create(
+        analyst_agent = Agent.create(
             name="analyst_agent",
             role="Financial Analyst",
             goal="Analyze stock trends and market news to generate insights.",
@@ -103,21 +103,21 @@ def main(args):
         )
 
         # Create Tasks
-        news_task = Task.direct_create(
+        news_task = Task.create(
             name="news_task",
             description=f"Retrieve latest news about the given stock ticker: {inputs['ticker']}.",
             expected_output="List of 5 relevant news articles.",
             inputs=inputs,
         )
 
-        stock_data_task = Task.direct_create(
+        stock_data_task = Task.create(
             name="stock_data_task",
             description=f"Retrieve stock price history for the given stock ticker: {inputs['ticker']}",
             expected_output="JSON object containing stock price history.",
             inputs=inputs,
         )
 
-        analysis_task = Task.direct_create(
+        analysis_task = Task.create(
             name="analysis_task",
             description=(
                 f"""
@@ -131,7 +131,7 @@ def main(args):
             inputs=inputs,
         )
 
-        portfolio_assistant = SupervisorAgent.direct_create(
+        portfolio_assistant = SupervisorAgent.create(
             "portfolio_assistant",
             role="Portfolio Assistant",
             goal="Analyze a given potential stock investment and provide a report with a set of investment considerations",

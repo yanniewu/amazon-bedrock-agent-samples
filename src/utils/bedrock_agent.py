@@ -387,7 +387,7 @@ class Task:
             self.output_type = None
 
     @classmethod
-    def direct_create(
+    def create(
         cls, name: str, description: str, expected_output: str, inputs: Dict = {}
     ):
         return cls(
@@ -662,7 +662,7 @@ class Agent:
         return session_state
 
     @classmethod
-    def direct_create(
+    def create(
         cls,
         name: str,
         role: str = "",
@@ -1084,7 +1084,7 @@ class SupervisorAgent:
         )
 
     @classmethod
-    def direct_create(
+    def create(
         cls,
         name: str,
         role: str = "",
