@@ -1,15 +1,16 @@
 # Getting Started with Amplify Video Games Sales Assistant
 
-This tutorial guides you through the process of setting up a React front-end application using AWS Amplify that integrates with Amazon Bedrock Agent project. The application leverages Amazon Cognito for user authentication and authorization. 
+This tutorial guides you through the process of setting up a React front-end application using AWS Amplify that integrates with an Amazon Bedrock Agent project. The services to be deployed are: Amplify Hosting, and it leverages Amazon Cognito for user authentication and authorization.
 
 By the end of this tutorial, you'll have a fully functional web application that allows users to interact with a conversational AI agent for video game sales assistance.
+
+> IMPORTANT: This example is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
 
 ## Prerequisites
 
 - [Node.js > 18 version required](https://nodejs.org/en/download/package-manager)
 
-
-[Install the Amplify CLI](https://docs.amplify.aws/gen1/react/tools/cli/start/set-up-cli/) with the following command:
+- [Install the Amplify CLI](https://docs.amplify.aws/gen1/react/tools/cli/start/set-up-cli/) with the following command:
 ```console
 npm install -g @aws-amplify/cli 
 ```
@@ -58,7 +59,7 @@ Go to the **Cognito** service, choose **Identity pools**, click on **amplifyvide
 
 From the **Authenticated access** section, click on the **Authenticated role** to go to the configuration page.
 
-In the **Permissions policies** section, click **Add permissions** and then click **Create inline policy** to add the following inline policy using the **JSON Policy editor**:
+In the **Permissions policies** section, click **Add permissions** and then click **Create inline policy** to add the following inline policy using the **JSON Policy editor**, update the values with your **<agent_arn>** and **<question_answers_table_arn>** that you can find in the outputs from the SAM tutorial.
 
 ```json
 {
@@ -69,10 +70,24 @@ In the **Permissions policies** section, click **Add permissions** and then clic
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeAgent",
+            ],
+            "Resource": "<agent_arn>"
+        },
+        {
+            "Sid": "InvokeBedrockModel",
+            "Effect": "Allow",
+            "Action": [
                 "bedrock:InvokeModel",
-                "dynamodb:Query"
             ],
             "Resource": "*"
+        },
+        {
+            "Sid": "DynamoDB",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:Query"
+            ],
+            "Resource": "<question_answers_table_arn>"
         }
     ]
 }
@@ -92,9 +107,11 @@ Use the following configuration:
 amplify publish
 ```
 
-Now you can test the application using the provided URL, create an account to access the assistant.
+Now you can test the application using the provided URL and create an account to access the Data Analyst Assistant.
 
 #### Sample Questions
+
+Now you can test de assistant with the following sample questions:
 
 - Hello
 - How can you help me?

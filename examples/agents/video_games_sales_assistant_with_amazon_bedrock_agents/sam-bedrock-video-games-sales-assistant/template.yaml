@@ -31,6 +31,11 @@ Parameters:
 
 Resources:
 
+  DataSourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'sales-data-source-${AWS::Region}-${AWS::AccountId}'
+
   QuestionAnswersHaiku35Table:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -53,7 +58,7 @@ Resources:
     Properties:
       CodeUri: functions/assistant-api-postgresql-haiku-35/
       Handler: app.lambda_handler
-      Runtime: python3.11
+      Runtime: python3.9
       Architectures:
         - x86_64
       Environment:
@@ -422,9 +427,18 @@ Resources:
                   - rds:RestoreDBClusterToPointInTime
                   - rds:RestoreDBInstanceFromDBSnapshot
                   - rds:RestoreDBInstanceToPointInTime
-                  - s3:*
                 Resource:
                   - '*'
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub 'arn:aws:s3:::sales-data-source-${AWS::Region}-${AWS::AccountId}/*'
+                  - !Sub 'arn:aws:s3:::sales-data-source-${AWS::Region}-${AWS::AccountId}'
       AssumeRolePolicyDocument:
         Statement:
           - Action: sts:AssumeRole
@@ -506,15 +520,27 @@ Resources:
       - DatabaseAssistant
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   DatabaseClusterName:
-    Description: "Database cluster name to connect using the Query Editor"
+    Description: "Database Cluster Name to Connect Using the Query Editor"
     Value: !Ref DatabaseAssistant
   SecretARN:
-    Description: "Secrets manager ARN for database connection"
+    Description: "Secret ARN for Database Connection"
     Value: !GetAtt AuroraSecretAssistant.Id
-  QuestionAnswersTable:
-    Description: "Table of Questions and Answers"
+  QuestionAnswersTableName:
+    Description: "Table Name of Questions and Answers"
     Value: !Ref QuestionAnswersHaiku35Table
+  QuestionAnswersTableArn:
+    Description: "Table ARN of Questions and Answers"
+    Value: !GetAtt QuestionAnswersHaiku35Table.Arn
+  LambdaFunctionArn:
+    Description: "Lambda Function Arn"
+    Value: !GetAtt AssistantAPIPostgreSQLHaiku35Function.Arn
+  LambdaFunctionName:
+    Description: "Lambda Function Name"
+    Value: !Ref AssistantAPIPostgreSQLHaiku35Function
+  DataSourceBucketName:
+    Description: "Bucket Name to Upload Data Source for the Database"
+    Value: !Ref DataSourceBucket
+  AuroraServerlessDBClusterArn:
+    Description: "The Aurora Serverless DB cluster ARN"
+    Value: !GetAtt DatabaseAssistant.DBClusterArn

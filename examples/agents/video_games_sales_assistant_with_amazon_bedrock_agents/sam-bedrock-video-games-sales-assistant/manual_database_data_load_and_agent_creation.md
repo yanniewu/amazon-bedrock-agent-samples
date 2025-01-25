@@ -1,66 +1,8 @@
-# Getting Started with SAM Video Games Sales Assistant and Amazon Bedrock Agents
+# Manual Database Creation, Data Loading, and Amazon Bedrock Agent Creation
 
-This tutorial guides you through the process of setting up the back-end using SAM and the Amazon Bedrock Agent configuration.
-
-By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
-
-## Prerequisites
-
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python > 3.9 installed, 3.11 recommended](https://www.python.org/downloads/) 
-* Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock.
-
-## SAM Deployment
-
-Under this SAM project folder execute the following commands to deploy the backend services for the Assistant:
-
-```bash
-sam build
-```
-
-Note: By default, the Python version used for the Lambda Function is 3.11. If you receive a **Build Failed** error, change to the Python version (>3.9) that you have in **template.yaml** file in line **56**.
-
-```bash
-sam deploy --guided
-```
-
-Use the following value arguments for the deployment configuration:
-
-- Stack Name : **sam-bedrock-video-games-sales-assistant**
-- AWS Region : **<use_your_own_region>**
-- Parameter PostgreSQLDatabaseName : **video_games_sales**
-- Parameter AuroraMaxCapacity : **2**
-- Parameter AuroraMinCapacity : **1**
-- Confirm changes before deploy : **Y**
-- Allow SAM CLI IAM role creation : **Y**
-- Disable rollback : **N**
-- Save arguments to configuration file : **Y**
-- SAM configuration file : **samconfig.toml**
-- SAM configuration environment : **default**
-
-After uploading the SAM project and changeset created:
-
-- Deploy this changeset? [y/N]: **Y**
-
-Save the CloudFormation outputs from the deployed stack, as you will use this information throughout the deployment of the application.
-
-Example of information:
-
-Key: SecretARN
-Description: Secrets manager ARN for database connection
-**Value: arn:aws:secretsmanager:<region>:XXXXXXXXXXXX:secret:sam-bedrock-video-games-sales-assistant-secret-name-XXXXXX**
-
-Key: DatabaseClusterName
-Description: Database cluster name to connect using the Query Editor
-**Value: sam-bedrock-video-games-sales-as-databaseassistant-XXXXXXXXXXXX**
-
-Key: QuestionAnswersTable
-Description: Table of Questions and Answers
-**Value: sam-bedrock-video-games-sales-assistant-QuestionAnswersTable-XXXXXXXXXXXXX**
-
+After completing the SAM deployment, save the CloudFormation outputs from the deployed stack, as you will use this information throughout the deployment of the application.
 
 ## Connect to the PostgreSQL Database and Load the Data Sample
-
 
 1. **Connect to PostgreSQL database**
 
@@ -136,6 +78,7 @@ Rules for the interaction:
 - When you generate SQL queries, include a data analysis in your final answer.
 - Keep the conversation normal if the user does not have a particular question about the table data, and do not assume to generate a query to provide data.
 - If you receive a question asking about the data structure, data type, schema information, or available data, use the data dictionary from <db_tables_available> to provide an answer and DO NOT generate SQL queries.
+- Provide your answer to the question in the same language as the user input.
 
 Format number:
 - Decimal places: 2
@@ -143,11 +86,9 @@ Format number:
 
 SQL Queries rules:
 - Use a default limit of 10 for the SQL queries.
-
-Your answer to the question in the same language as the user input.
 ```
 
-### Create an Action Group
+## Create an Action Group
 
 In the **Agent builder**, for the **Action groups** section, click on **Add** and use the following information to create the action group. After completing this, click on **Create**:
 
@@ -226,7 +167,7 @@ In the **Agent builder**, for the **Action groups** section, click on **Add** an
 }
 ```
 
-### Edit Orchestration Strategy
+## Edit Orchestration Strategy
 
 In the **Agent builder**, for the **Orchestration strategy** section, click on **Edit**. Use the following information to update the **Orchestration strategy details** section. After completing this, click on **Save and exit**:
 
@@ -317,7 +258,7 @@ $prompt_session_attributes$
     }
 ```
 
-### Update the Lambda Function to be Executed by the Amazon Bedrock Agent
+## Update the Lambda Function to be Executed by the Amazon Bedrock Agent
 
 Go to the **Lambda** service, click in the function **sam-bedrock-video-games-s-AssistantAPIPostgreSQLFu-XXXXXXXXXXXX**, go to **Configuration** and click on **Permissions** from the lefy menu.
 
@@ -330,9 +271,9 @@ In **Resource-based policy statements**, click on **Add permissions**, use the f
 - Source ARN: **<source_arn_of_the_agent>** (You can find this on the Agent overview)
 - Action: **lambda:InvokeFunction**
 
-### Testing the Agent
+## Testing the Agent
 
-Now you can go back to your Agent, in the **Agent builder** section click on **Save**, **Prepare** and **Test**, use the **Test Agent** with the following sample questions:
+Now you can go back to your Amazon Bedrock Agent,, in the **Agent builder** section click on **Save**, **Prepare** and **Test**, use the **Test Agent** with the following sample questions:
 
 - Hello
 - How can you help me?
@@ -346,6 +287,6 @@ Now you can go back to your Agent, in the **Agent builder** section click on **S
 - Which are the most popular consoles and why?
 - Give me a short summary and conclusion.
 
-### Create Alias Agent Application
+## Create Alias Agent Application
 
 To use the Agent application, once you have a **Prepared** version for testing, go to your **Agent overview** and click on **Create Alias** to use it from your front-end application.
