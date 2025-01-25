@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 def upload_directory(path, bucket_name):
-        for root,dirs,files in os.walk(path):
-            for file in files:
-                file_to_upload = os.path.join(root,file)
-                dest_key = f"{path}/{file}"
-                print(f"uploading file {file_to_upload} to {bucket_name}")
-                s3_client.upload_file(file_to_upload,bucket_name,dest_key)
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            file_to_upload = os.path.join(root, file)
+            dest_key = f"{path}/{file}"
+            print(f"uploading file {file_to_upload} to {bucket_name}")
+            s3_client.upload_file(file_to_upload, bucket_name, dest_key)
 
 
 def main(args):
@@ -67,12 +67,9 @@ def main(args):
             name="general_mortgage_questions",
             role="General Mortgage Questions",
             goal="Handle conversations about general mortgage questions, like high level concepts of refinancing or tradeoffs of 15-year vs 30-year terms.",
-            instructions=dedent("""
-                You are a mortgage bot, and can answer questions about mortgage refinancing and tradeoffs of mortgage types."""),
+            instructions="""You are a mortgage bot, and can answer questions about mortgage refinancing and tradeoffs of mortgage types.""",
             kb_id=kb_id,
-            kb_descr=dedent("""
-        Use this knowledge base to answer general questions about mortgages, like how to refinance, 
-        or the difference between 15-year and 30-year mortgages."""),
+            kb_descr="""Use this knowledge base to answer general questions about mortgages, like how to refinance, or the difference between 15-year and 30-year mortgages.""",
             llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
 
@@ -80,7 +77,7 @@ def main(args):
                             name="existing_mortgage_assistant",
                             role="Existing Mortgage Assistant",
                             goal="Handle conversations about existing mortgage accounts.",
-                            instructions=dedent(""" 
+                            instructions=""" 
 You are a mortgage bot, and can retrieve the latest details about an existing mortgage on behalf of customers.
 When starting a new session, give them a friendly greeting using their preferred name 
 if you already have it.
@@ -91,7 +88,7 @@ mortgage maturity date, last payment date, next payment date, etc.).
 do not engage with users about topics other than an existing mortgage. 
 leave those other topics for other experts to handle. 
 for example, do not respond to general questions about mortgages.
-                            """),
+                            """,
                             llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
                             )
 
@@ -185,7 +182,7 @@ History is returned as a list of objects, where each object contains the date an
                                 }
                             ],
                             llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-                            code_interpreter=True, # lets us do mortgage calcs accurately
+                            code_interpreter=True,  # lets us do mortgage calcs accurately
                             verbose=False
                             )
 
@@ -193,26 +190,26 @@ History is returned as a list of objects, where each object contains the date an
                                                  role="Mortgages Assistant",
                                                  goal="Provide a unified conversational experience for all things related to mortgages.",
                                                  collaboration_type="SUPERVISOR_ROUTER",
-                                                 instructions=dedent(f"""
+                                                 instructions=f"""
     Act as a helpful mortgages assistant, allowing seamless conversations across a few
     different domains: current mortgages, new mortgage applications, and general mortgage knowledge.
     For general mortgage knowledge, you use the {kb_name} knowledge base.
-    If asked for a complicated calculation, use your code interpreter to be sure it's done accurately."""),
+    If asked for a complicated calculation, use your code interpreter to be sure it's done accurately.""",
                                                  collaborator_agents=[
                                     {
                                         "agent": "existing_mortgage_assistant",
-                                        "instructions": dedent("""
+                                        "instructions": """
                     Do not pick this collaborator for general mortgage knowledge like guidance about refinancing, 
                     or tradeoffs between mortgage types. instead use the general-mortgage-kb knowledge base for those.
-                    Use this collaborator for discussing existing mortgages."""),
+                    Use this collaborator for discussing existing mortgages.""",
                                     },
                                     {
                                         "agent": "mortgage_application_agent",
-                                        "instructions": dedent("""
+                                        "instructions": """
                     Do not pick this collaborator for general mortgage knowledge like guidance about refinancing, 
                     or tradeoffs between mortgage types. instead use the general-mortgage-kb knowledge base for those.
                     Do use this collaborator for discussing the application process for new mortgages
-                    and for getting the most recent interest rates available for new mortgages."""),
+                    and for getting the most recent interest rates available for new mortgages.""",
                                     },
                                     {
                                         "agent": "general_mortgage_questions",
@@ -221,10 +218,9 @@ History is returned as a list of objects, where each object contains the date an
                                     }
                                 ],
                                                  collaborator_objects=[mortgage_application_agent, existing_mortgage_assistant,
-                                                      general_mortgage_questions],
+                                                                       general_mortgage_questions],
                                                  llm="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
                                                  verbose=False)
-    
 
     if args.recreate_agents == "false":
         print("\n\nInvoking supervisor agent...\n\n")
@@ -237,7 +233,7 @@ History is returned as a list of objects, where each object contains the date an
                     "did you receive my employment verification doc yet? i sent it last week",
                     "i’m getting ready to lock in on a rate. what have the rates looked like in last couple weeks?",
                     # "great. if i use the highest of those rates for $500K for 15 years, what’s my payment?"
-        ]
+                    ]
 
         for request in requests:
             print(f"\n\nRequest: {request}\n\n")
@@ -254,4 +250,3 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args)
-
