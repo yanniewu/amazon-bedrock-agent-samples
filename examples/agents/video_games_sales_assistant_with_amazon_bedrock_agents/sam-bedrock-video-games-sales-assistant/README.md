@@ -54,7 +54,8 @@ export STACK_NAME=sam-bedrock-video-games-sales-assistant
 
 # Retrieve the output values and store them in environment variables
 export DATABASE_CLUSTER_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DatabaseClusterName'].OutputValue" --output text)
-export QUESTION_ANSWERS_TABLE=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuestionAnswersTable'].OutputValue" --output text)
+export QUESTION_ANSWERS_TABLE_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuestionAnswersTableName'].OutputValue" --output text)
+export QUESTION_ANSWERS_TABLE_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='QuestionAnswersTableArn'].OutputValue" --output text)
 export SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='SecretARN'].OutputValue" --output text)
 export LAMBDA_FUNCTION_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionArn'].OutputValue" --output text)
 export LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text)
@@ -62,7 +63,8 @@ export DATA_SOURCE_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name
 export AURORA_SERVERLESS_DB_CLUSTER_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AuroraServerlessDBClusterArn'].OutputValue" --output text)
 cat << EOF
 STACK_NAME: ${STACK_NAME}
-QUESTION_ANSWERS_TABLE: ${QUESTION_ANSWERS_TABLE}
+QUESTION_ANSWERS_TABLE_NAME: ${QUESTION_ANSWERS_TABLE_NAME}
+QUESTION_ANSWERS_TABLE_ARN: ${QUESTION_ANSWERS_TABLE_ARN}
 DATABASE_CLUSTER_NAME: ${DATABASE_CLUSTER_NAME}
 SECRET_ARN: ${SECRET_ARN}
 LAMBDA_FUNCTION_ARN: ${LAMBDA_FUNCTION_ARN}
@@ -73,23 +75,21 @@ EOF
 
 ```
 
-## Loading Data Sample to the PostgreSQL databae
+## Loading Data Sample to the PostgreSQL Databae
 
-Execute the following command to create the database and load the data source.
+> Execute the following command to create the database and load the data source.
 
 ``` bash
 pip install boto3
 python3 resources/create-sales-database.py
-
 ```
 
 ## Amazon Bedrock Agent Creation
 
-Execute the following command to create Amazon Bedrock Agent.
+Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
 
 ``` bash
 python3 resources/create-amazon-bedrock-agent.py
-
 ```
 
 The Agent was configured with the following information:
@@ -116,3 +116,39 @@ Now you can go back to your Amazon Bedrock Agen called **video-games-sales-assis
 ## Create Alias Agent Application
 
 To use the Agent application, once you have a **Prepared** version for testing, go to your **Agent overview** and click on **Create Alias** to use it from your front-end application.
+
+## Cleaning-up Resources (optional)
+
+The next steps are optional and demonstrate how to delete the resources that we've created.
+Update the following exports with the values of the services you created before, and then execute."
+
+``` bash
+# Set the stack name environment variable
+export AGENT_ID=<you_agent_id>
+export AGENT_ARN=<you_agent_arn>
+export ACTION_GROUP_ID=<you_action_group_id>
+export LAMBDA_FUNCTION_ARN=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionArn'].OutputValue" --output text)
+export LAMBDA_FUNCTION_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='LambdaFunctionName'].OutputValue" --output text)
+export DATA_SOURCE_BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='DataSourceBucketName'].OutputValue" --output text)
+
+```
+
+Execute the following command to delete Amazon Bedrock Agent.
+
+``` bash
+python3 resources/delete-amazon-bedrock-agent.py
+```
+
+Remove the data source file uploaded to the Amazon S3 bucket.
+
+``` bash
+aws s3api delete-object --bucket $DATA_SOURCE_BUCKET_NAME --key video_games_sales_no_headers.csv
+```
+
+Delete the AWS SAM application by deleting the AWS CloudFormation stack.
+
+``` bash
+sam delete
+```
+
+## Thank You

@@ -4,15 +4,19 @@ import os
 session = boto3.session.Session()
 region = session.region_name
 
-data_source_bucket_name = os.environ['DATA_SOURCE_BUCKET_NAME']
-aurora_serverless_db_cluster_arn = os.environ['AURORA_SERVERLESS_DB_CLUSTER_ARN']
-secret_arn = os.environ['SECRET_ARN']
+data_source_bucket_name = os.environ["DATA_SOURCE_BUCKET_NAME"]
+aurora_serverless_db_cluster_arn = os.environ["AURORA_SERVERLESS_DB_CLUSTER_ARN"]
+secret_arn = os.environ["SECRET_ARN"]
 database_name = "video_games_sales"
 
 s3_client = boto3.client("s3")
-s3_client.upload_file('resources/database/video_games_sales_no_headers.csv', data_source_bucket_name, 'video_games_sales_no_headers.csv')
+s3_client.upload_file(
+    "resources/database/video_games_sales_no_headers.csv",
+    data_source_bucket_name,
+    "video_games_sales_no_headers.csv",
+)
 
-client = boto3.client('rds-data')
+client = boto3.client("rds-data")
 
 query1 = """ CREATE TABLE video_games_sales_units (
     title TEXT,
@@ -36,9 +40,8 @@ response = client.execute_statement(
     database=database_name,
 )
 
-print("Query: "+query1)
-print("Query response: "+str(response))
-
+print("Query: " + query1)
+print("Query response: " + str(response))
 
 query2 = "CREATE EXTENSION aws_s3 CASCADE;"
 
@@ -48,10 +51,10 @@ response = client.execute_statement(
     sql=query2,
     database=database_name,
 )
-print("-----------------------------------------")
-print("Query: "+query2)
-print("Query response: "+str(response))
 
+print("-----------------------------------------")
+print("Query: " + query2)
+print("Query response: " + str(response))
 
 query3 = f""" 
 SELECT aws_s3.table_import_from_s3(
@@ -67,6 +70,10 @@ response = client.execute_statement(
     sql=query3,
     database=database_name,
 )
+
 print("-----------------------------------------")
-print("Query: "+query3)
-print("Query response: "+str(response))
+print("Query: " + query3)
+print("Query response: " + str(response))
+
+print("-----------------------------------------")
+print("Database created successfully!")

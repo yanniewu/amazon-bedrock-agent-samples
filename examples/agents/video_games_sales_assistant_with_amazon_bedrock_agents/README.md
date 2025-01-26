@@ -6,10 +6,10 @@ This solution provides a Generative AI Application reference that is able to acc
 
 **To deploy the application, please follow these instructions:**
 
+> *It is recommended to use the Oregon (us-west-2) or N. Virginia (us-east-1) regions to deploy the application.*
+
 1. [Getting Started with SAM Video Games Sales Assistant and Amazon Bedrock Agents](./sam-bedrock-video-games-sales-assistant/)
 2. [Getting Started with Amplify Video Games Sales Assistant](./amplify-video-games-sales-assistant-sample/)
-
-*Recommended to use Oregon (us-west-2) or N. Virginia (us-east-1) regions.*.
 
 ## AWS Diagram Architecture
 

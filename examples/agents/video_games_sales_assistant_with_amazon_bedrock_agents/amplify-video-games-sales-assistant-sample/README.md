@@ -8,10 +8,11 @@ By the end of this tutorial, you'll have a fully functional web application that
 
 ## Prerequisites
 
+- An **Alias** created from your **Amazon Bedrock Agent** that you created in the first tutorial.
 - [Node.js > 18 version required](https://nodejs.org/en/download/package-manager)
-
 - [Install the Amplify CLI](https://docs.amplify.aws/gen1/react/tools/cli/start/set-up-cli/) with the following command:
-```console
+
+``` bash
 npm install -g @aws-amplify/cli 
 ```
 
@@ -21,13 +22,13 @@ Run the following commands in the React front-end application.
 
 ### Install React Application Dependencies
 
-```console
+``` bash
 npm install
 ```
 
 ### Initialize the Amplify Application using **Gen1**
 
-```console
+``` bash
 amplify init
 ```
 
@@ -36,16 +37,17 @@ amplify init
 
 ### Add Authentication
 
-```console
+``` bash
 amplify add auth
 ```
+
 Use the following configuration:
  - Do you want to use the default authentication and security configuration? **Default configuration**
  - How do you want users to be able to sign in? **Email**
  - Do you want to configure advanced settings? **No, I am done.**
 
 
-```console
+``` bash
 amplify push
 ```
 
@@ -59,9 +61,9 @@ Go to the **Cognito** service, choose **Identity pools**, click on **amplifyvide
 
 From the **Authenticated access** section, click on the **Authenticated role** to go to the configuration page.
 
-In the **Permissions policies** section, click **Add permissions** and then click **Create inline policy** to add the following inline policy using the **JSON Policy editor**, update the values with your **<agent_arn>** and **<question_answers_table_arn>** that you can find in the outputs from the SAM tutorial.
+In the **Permissions policies** section, click **Add permissions** and then click **Create inline policy** to add the following inline policy using the **JSON Policy editor**, update the values with your **<agent_arn>**, **<agent_id>**, **<account_id>** and **<question_answers_table_arn>** that you can find in the outputs from the SAM tutorial.
 
-```json
+``` json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -69,17 +71,25 @@ In the **Permissions policies** section, click **Add permissions** and then clic
             "Sid": "InvokeBedrockAgent",
             "Effect": "Allow",
             "Action": [
-                "bedrock:InvokeAgent",
+                "bedrock:*"
             ],
-            "Resource": "<agent_arn>"
+            "Resource": [
+                "<agent_arn>",
+                "arn:aws:bedrock:*:<account_id>:agent-alias/<agent_id>/*"
+            ]
         },
         {
             "Sid": "InvokeBedrockModel",
             "Effect": "Allow",
             "Action": [
-                "bedrock:InvokeModel",
+                "bedrock:*"
             ],
-            "Resource": "*"
+            "Resource": [
+                "arn:aws:bedrock:*:<account_id>:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0"
+            ]
         },
         {
             "Sid": "DynamoDB",
@@ -95,7 +105,7 @@ In the **Permissions policies** section, click **Add permissions** and then clic
 
 ### Add Hosting and Testing
 
-```console
+``` bash
 amplify add hosting
 ```
 
@@ -103,7 +113,7 @@ Use the following configuration:
 - Select the plugin module to execute · **Hosting with Amplify Console (Managed hosting with custom domains, Continuous deployment)**
 - Choose a type **Manual deployment**
 
-```console
+``` bash
 amplify publish
 ```
 
@@ -124,3 +134,13 @@ Now you can test de assistant with the following sample questions:
 - Which is the year with the highest number of games released?
 - Which are the most popular consoles and why?
 - Give me a short summary and conclusion.
+
+## Cleaning-up Resources (optional)
+
+The next step is optional to delete the resources that we've created.
+
+``` bash
+amplify delete
+```
+
+## Thank You
