@@ -328,16 +328,6 @@ Resources:
   SecurityGroupAssistantfromDataSourceAssistantStackSecurityGroupAssistant:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: Allow PostgreSQL connections
-      FromPort: 5432
-      GroupId: !GetAtt SecurityGroupAssistant.GroupId
-      IpProtocol: tcp
-      SourceSecurityGroupId: !GetAtt SecurityGroupAssistant.GroupId
-      ToPort: 5432
-
-  SecurityGroupAssistantfromDataSourceAssistantStackSecurityGroupAssistant:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
       Description: Allow connections to the database Cluster from the Proxy
       FromPort: !GetAtt DatabaseAssistant.Endpoint.Port
       GroupId: !GetAtt SecurityGroupAssistant.GroupId
@@ -516,8 +506,6 @@ Resources:
         - !Ref DatabaseAssistant
       DBProxyName: !Ref DatabaseAssistantdatabaseproxy
       TargetGroupName: default
-    DependsOn:
-      - DatabaseAssistant
 
 Outputs:
   DatabaseClusterName:
