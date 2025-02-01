@@ -4,7 +4,9 @@ This tutorial guides you through the process of setting up the back-end using AW
 
 By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
 
-> IMPORTANT: This example is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> IMPORTANT: This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+
+> IMPORTANT: Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
@@ -86,6 +88,8 @@ python3 resources/create-sales-database.py
 
 ## Amazon Bedrock Agent Creation
 
+> **IMPORTANT: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+
 Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
 
 ``` bash
@@ -105,6 +109,7 @@ Now you can go back to your Amazon Bedrock Agen called **video-games-sales-assis
 - How can you help me?
 - What is the structure of the data?
 - Which developers tend to get the best reviews?
+- What were the total sales for each region between 2000 and 2010? Give me the data in percentages.
 - What were the best-selling games in the last 10 years?
 - What are the best-selling video game genres?
 - Give me the top 3 game publishers.

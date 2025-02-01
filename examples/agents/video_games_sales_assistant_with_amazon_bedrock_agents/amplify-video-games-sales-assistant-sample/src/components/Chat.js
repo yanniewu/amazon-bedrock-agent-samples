@@ -14,9 +14,10 @@ import Grow from '@mui/material/Grow';
 import Stack from '@mui/material/Stack';
 import Fade from '@mui/material/Fade';
 import { v4 as uuidv4 } from 'uuid';
-import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-bedrock-agent-runtime";
+import { BedrockAgentRuntimeClient, InvokeAgentCommand, BedrockAgentRuntimeClientConfigType } from "@aws-sdk/client-bedrock-agent-runtime";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
 
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
@@ -24,10 +25,8 @@ import QuestionAnswerOutlinedIcon from '@mui/icons-material/QuestionAnswerOutlin
 import PsychologyRoundedIcon from '@mui/icons-material/PsychologyRounded';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
 
-import { fetchAuthSession } from 'aws-amplify/auth';
-import config from '../amplifyconfiguration.json';
 import AnswerDetailsDialog from './AnswerDetailsDialog.js';
-import { WELCOME_MESSAGE, MAX_LENGTH_INPUT_SEARCH, AGENT_ID, AGENT_ALIAS_ID, QUESTION_ANSWERS_TABLE_NAME, CHART_PROMPT, MODEL_ID_FOR_CHART_AND_DASHBOARD } from '../env';
+import { WELCOME_MESSAGE, MAX_LENGTH_INPUT_SEARCH, AGENT_ID, AGENT_ALIAS_ID, QUESTION_ANSWERS_TABLE_NAME, CHART_PROMPT, MODEL_ID_FOR_CHART_AND_DASHBOARD, ACCESS_KEY_ID, SECRET_ACCESS_KEY, AWS_REGION } from '../env';
 import TableView from './TableView.js';
 import MyChart from './MyChart.js';
 
@@ -124,23 +123,9 @@ const Chat = ({}) => {
         }
         return str;
     }
-
-    const getAwsConfigAuthToken = async () => {
-        const authToken = (await fetchAuthSession()).tokens?.idToken?.toString();
-        const my_login = 'cognito-idp.'+config.aws_project_region+'.amazonaws.com/'+config.aws_user_pools_id
-        const config_aws = { 
-            region: config.aws_project_region,
-            credentials: fromCognitoIdentityPool({
-                clientConfig: { region: config.aws_project_region },
-                identityPoolId: config.aws_cognito_identity_pool_id,
-                logins: { [my_login]: authToken }
-            })
-        };
-        return config_aws
-    }
     
     const getAnswer = async (my_query) => {
-        const config_aws = await getAwsConfigAuthToken();
+
         if (!loading && my_query!==""){
             setControlAnswers(prevState => [...prevState, { }]);
             setAnswers(prevState => [...prevState, { query: my_query }]);
@@ -149,7 +134,7 @@ const Chat = ({}) => {
             setErrorMessage("")
             setQuery("");
             try {
-                const { completion, usage, totalInputTokens, totalOutputTokens, runningTraces, queryUuid } = await invokeBedrockAgent(my_query, sessionId, config_aws)
+                const { completion, usage, totalInputTokens, totalOutputTokens, runningTraces, queryUuid } = await invokeBedrockAgent(my_query, sessionId)
                 console.log("------- completion -------");
                 console.log(completion);
                 console.log("------- running traces -------");
@@ -162,7 +147,7 @@ const Chat = ({}) => {
                     runningTraces,
                     queryUuid
                 }
-                const queryResults = await getQueryResults(json, config_aws);
+                const queryResults = await getQueryResults(json);
                 if (queryResults.length>0) {
                     json.chart = "loading";
                     json.queryResults = queryResults;
@@ -172,7 +157,7 @@ const Chat = ({}) => {
                 setControlAnswers(prevState => [...prevState, { current_tab_view: 'answer' }]);
                 setAnswers(prevState => [...prevState, json ]);
                 if (queryResults.length>0) {
-                    json.chart = await generateChart(json, queryResults, config_aws);
+                    json.chart = await generateChart(json, queryResults);
                     console.log("------- answer with chart-------");
                     console.log(json);
                 }else{
@@ -189,8 +174,16 @@ const Chat = ({}) => {
         }
     }
 
-    const invokeBedrockAgent = async (prompt, sessionId, config_aws) => {
-        const bedrock = new BedrockAgentRuntimeClient(config_aws);
+    const invokeBedrockAgent = async (prompt, sessionId) => {
+
+        const bedrock = new BedrockAgentRuntimeClient({
+            region: AWS_REGION,
+            credentials: {
+                accessKeyId: ACCESS_KEY_ID,
+                secretAccessKey: SECRET_ACCESS_KEY
+            },
+        });
+        
         const now = new Date();
         const formattedDate = now.toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const formattedTime = now.toLocaleString('en-US', { timeStyle: 'short' });
@@ -232,32 +225,39 @@ const Chat = ({}) => {
         return { completion, runningTraces, queryUuid };  
     };
 
-    const getQueryResults = async (answer, config_aws) => {
+    const getQueryResults = async (answer) => {
         let queryResults = [];
         try {
-            const client = new DynamoDBClient(config_aws);
-            
-            const input = { 
-                TableName: QUESTION_ANSWERS_TABLE_NAME,
-                KeyConditionExpression:
-                    "id = :queryUuid AND my_timestamp > :minValue",
-                ExpressionAttributeValues: {
-                    ":queryUuid": {
-                    'S': answer.queryUuid
-                    },
-                    ":minValue": {
-                    'N': '0'
-                    },
+            const client = new DynamoDBClient({
+                region: AWS_REGION,
+                credentials: {
+                    accessKeyId: ACCESS_KEY_ID,
+                    secretAccessKey: SECRET_ACCESS_KEY
                 },
-                ConsistentRead: true
+            });
+            const docClient = DynamoDBDocumentClient.from(client);
+            
+            const params = {
+                TableName: QUESTION_ANSWERS_TABLE_NAME,
+                //IndexName: "GSI1",
+                KeyConditionExpression: "#id = :queryUuid AND #my_timestamp > :minValue",
+                ExpressionAttributeNames: {
+                  "#id": "id",
+                  "#my_timestamp": "my_timestamp",
+                },
+                ExpressionAttributeValues: {
+                  ":queryUuid": answer.queryUuid,
+                  ":minValue": 0,
+                },
             };
             console.log("------- get data source -------");
-            console.log(input);
-            const command = new QueryCommand(input);
-            const response = await client.send(command);
+            console.log(params);
+            const command = new QueryCommand(params);
+            const response = await docClient.send(command);
+            console.log(response);
             if (response.hasOwnProperty("Items")){
                 for (let i = 0; i < response.Items.length; i++) {
-                    queryResults.push({ "query": response.Items[i].query.S, "query_results": JSON.parse(response.Items[i].data.S).result })
+                    queryResults.push({ "query": response.Items[i].query, "query_results": JSON.parse(response.Items[i].data).result })
                 }
             }
             console.log("------- data uuid -------");
@@ -289,9 +289,15 @@ const Chat = ({}) => {
         return obj;
     };
 
-    const generateChart = async (answer, answerDetails, config_aws) => {
+    const generateChart = async (answer, answerDetails) => {
 
-        const bedrock = new BedrockRuntimeClient(config_aws);
+        const bedrock = new BedrockRuntimeClient({
+            region: AWS_REGION,
+            credentials: {
+                accessKeyId: ACCESS_KEY_ID,
+                secretAccessKey: SECRET_ACCESS_KEY
+            },
+        });
 
         let query_results = ""
         for (let i = 0; i < answerDetails.length; i++) {
@@ -409,7 +415,7 @@ const Chat = ({}) => {
                                 alignItems: 'left'
                             }}>
                                 <Box sx={{ pr: 1, pl:0.5 }}>
-                                    <img src="/images/genai.png" width={28} height={28} />
+                                    <img src="/images/genai.png" alt="Amazon Bedrock" width={28} height={28} />
                                 </Box>
                                 <Box sx={{ p:0 }}>
 
@@ -596,7 +602,7 @@ const Chat = ({}) => {
             })}
             >
             <Box sx={{ pt:1 }}>
-                <img src="/images/AWS_logo_RGB.png" height={20} />
+                <img src="/images/AWS_logo_RGB.png" alt="Amazon Web Services" height={20} />
             </Box>
             <InputBase
                 required

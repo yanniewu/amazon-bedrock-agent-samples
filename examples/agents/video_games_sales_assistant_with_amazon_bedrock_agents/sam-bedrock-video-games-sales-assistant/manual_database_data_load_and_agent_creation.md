@@ -58,6 +58,8 @@ SELECT aws_s3.table_import_from_s3(
 
 ## Create the Amazon Bedrock Agent
 
+> **IMPORTANT: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+
 Go to the **Amazon Bedrock** service and select **Agents** from the menu in the **Builder tools** section. Click on **Create Agent** and provide the following name:
 
 - Agent name: **video-games-sales-assistant**

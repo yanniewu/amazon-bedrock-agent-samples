@@ -16,8 +16,6 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import Chat from "./Chat";
-import { signOut } from 'aws-amplify/auth';
-import { getCurrentUser } from 'aws-amplify/auth';
 import { APP_NAME } from '../env';
 import { Slide } from 'react-slideshow-image';
 import 'react-slideshow-image/dist/styles.css';
@@ -30,24 +28,12 @@ import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 
 function LayoutApp() {
 
-  const [mobileLine,setMobileLine] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
   const effectRan = React.useRef(false);
   useEffect(() => {
     if (!effectRan.current) {
       console.log("effect applied - only on the FIRST mount");
-      const fetchData = async () => {
-        console.log("Hola");
-        const { username, userId, signInDetails } = await getCurrentUser();
-        console.log(`The username: ${username}`);
-        console.log(`The userId: ${userId}`);
-        console.log(signInDetails);
-        setMobileLine(signInDetails.loginId)
-      }
-      fetchData()
-          // catch any error
-          .catch(console.error);
     }
     return () => effectRan.current = true;
   }, []);
@@ -59,14 +45,6 @@ function LayoutApp() {
       },
     }
   });
-
-  async function handleSignOut() {
-    try {
-      await signOut();
-    } catch (error) {
-      console.log('error signing out: ', error);
-    }
-  }
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -86,11 +64,8 @@ function LayoutApp() {
             {APP_NAME}
           </Typography>
           <Box sx={{ display: { xs: "none", sm: "inline"} }}>
-              <Chip sx={{  border: 0, fontSize: "0.95em" }} label={mobileLine.toUpperCase()} variant="outlined" icon={<SentimentSatisfiedAltIcon />} />
+              <Chip sx={{  border: 0, fontSize: "0.95em" }} label={"Guest User"} variant="outlined" icon={<SentimentSatisfiedAltIcon />} />
           </Box>
-          <Button onClick={handleSignOut} sx={{ ml:1 }}>
-          Sign Out
-          </Button>
         </Toolbar>
       </AppBar>
       <Container disableGutters maxWidth="lg" component="main" >
