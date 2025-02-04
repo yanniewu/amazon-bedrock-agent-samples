@@ -332,7 +332,7 @@ Resources:
             Action:
               - 'dynamodb:*'
             Resource:
-              - '*'
+              - !GetAtt QuestionAnswersHaiku35Table.Arn
       RouteTableIds:
         - !Ref VPCAssistantPrivateSubnet1RouteTable
         - !Ref VPCAssistantPrivateSubnet2RouteTable
@@ -350,7 +350,7 @@ Resources:
             Action:
               - 's3:*'
             Resource:
-              - '*'
+              - !GetAtt DataSourceBucket.Arn
       RouteTableIds:
         - !Ref VPCAssistantPrivateSubnet1RouteTable
         - !Ref VPCAssistantPrivateSubnet2RouteTable
