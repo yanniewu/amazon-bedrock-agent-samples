@@ -351,6 +351,12 @@ Resources:
               - 's3:*'
             Resource:
               - !GetAtt DataSourceBucket.Arn
+              - Fn::Join:
+                - ''
+                - - Fn::GetAtt:
+                      - DataSourceBucket
+                      - Arn
+                  - "/*"
       RouteTableIds:
         - !Ref VPCAssistantPrivateSubnet1RouteTable
         - !Ref VPCAssistantPrivateSubnet2RouteTable
