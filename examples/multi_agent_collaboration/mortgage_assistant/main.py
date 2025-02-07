@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
+import sys
+from pathlib import Path
 import time
 import os
 import argparse
 import boto3
-from textwrap import dedent
 import logging
 import uuid
-import sys
-from pathlib import Path
+from textwrap import dedent
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from src.utils.bedrock_agent import Agent, SupervisorAgent, agents_helper
+from src.utils.bedrock_agent import Agent, SupervisorAgent
 from src.utils.knowledge_base_helper import KnowledgeBasesForAmazonBedrock
+
 
 kb_helper = KnowledgeBasesForAmazonBedrock()
 
@@ -35,14 +36,14 @@ def upload_directory(path, bucket_name):
 def main(args):
     if args.clean_up == "true":
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent("mortgages_assistant", verbose=True)
+        Agent.delete_by_name("mortgages_assistant", verbose=True)
         kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
         return
     if args.recreate_agents == "false":
         Agent.set_force_recreate_default(False)
     else:
         Agent.set_force_recreate_default(True)
-        agents_helper.delete_agent("mortgages_assistant", verbose=True)
+        Agent.delete_by_name("mortgages_assistant", verbose=True)
         # kb_helper.delete_kb("general-mortgage-kb", delete_s3_bucket=False)
 
     bucket_name = None
@@ -53,8 +54,7 @@ def main(args):
         kb_description="Useful for answering questions about mortgage refinancing and for questions comparing various mortgage types",
         data_bucket_name=bucket_name
     )
-    bucket_name = kb_helper.data_bucket_name
-    print(f"KB name: {kb_name}, kb_id: {kb_id}, ds_id: {ds_id}, bucket_name: {bucket_name}\n")
+    print(f"KB name: {kb_name}, kb_id: {kb_id}, ds_id: {ds_id}\n")
 
     if args.recreate_agents == "true":
         print("uploading dir")
