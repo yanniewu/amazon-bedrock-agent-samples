@@ -2,26 +2,31 @@ import json
 import inspect
 from typing import Any, Dict
 
+
 def get_named_parameter(event: Dict[str, Any], name: str) -> Any:
     """Extract a named parameter from the event object."""
-    if 'parameters' in event:
-        return next(item for item in event['parameters'] if item['name'] == name)['value']
+    if "parameters" in event:
+        return next(item for item in event["parameters"] if item["name"] == name)[
+            "value"
+        ]
     else:
         return None
 
-def populate_function_response(event: Dict[str, Any], response_body: Any) -> Dict[str, Any]:
+
+def populate_function_response(
+    event: Dict[str, Any], response_body: Any
+) -> Dict[str, Any]:
     """Create the response structure expected by the agent."""
     return {
-        'response': {
-            'actionGroup': event['actionGroup'],
-            'function': event['function'],
-            'functionResponse': {
-                'responseBody': {
-                    'TEXT': {'body': str(response_body)}
-                }
-            }
+        "response": {
+            "actionGroup": event["actionGroup"],
+            "function": event["function"],
+            "functionResponse": {
+                "responseBody": {"TEXT": {"body": str(response_body)}}
+            },
         }
     }
+
 
 def mask_string(input_string: str) -> str:
     """Masks a string by replacing all but the last four characters with asterisks."""
@@ -38,15 +43,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     print(f"Received event: {event}")
 
-    function = event['function']
-    if function == 'mask_string':
+    function = event["function"]
+    if function == "mask_string":
         # Get parameters from the event
         params = {}
         for param_name in inspect.signature(mask_string).parameters:
             param_value = get_named_parameter(event, param_name)
             if param_value is None:
                 # Check session state if parameter not found
-                session_state = event.get('sessionAttributes', {})
+                session_state = event.get("sessionAttributes", {})
                 if session_state and param_name in session_state:
                     param_value = session_state[param_name]
                 else:

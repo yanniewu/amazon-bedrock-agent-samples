@@ -91,7 +91,13 @@ class ParameterSchema:
         required: bool = False
 
         @classmethod
-        def create(cls, name: str, parameter_type: ParamType, description: str, required: bool = False) -> Self:
+        def create(
+            cls,
+            name: str,
+            parameter_type: ParamType,
+            description: str,
+            required: bool = False,
+        ) -> Self:
             return cls(name, parameter_type, description, required)
 
     def __init__(self, param: _Param = None):
@@ -104,26 +110,36 @@ class ParameterSchema:
         return cls(None)
 
     @classmethod
-    def create_with_values(cls, name: str, parameter_type: ParamType, description: str, required: bool = False) \
-            -> "ParameterSchema":
+    def create_with_values(
+        cls,
+        name: str,
+        parameter_type: ParamType,
+        description: str,
+        required: bool = False,
+    ) -> "ParameterSchema":
         """Create with an initial parameter (you can add more)"""
         param = cls._Param.create(name, parameter_type, dedent(description), required)
         return cls(param)
 
-    def add_param(self, name: str, parameter_type: ParamType, description: str, required: bool = False):
+    def add_param(
+        self,
+        name: str,
+        parameter_type: ParamType,
+        description: str,
+        required: bool = False,
+    ):
         param = self._Param.create(name, parameter_type, description, required)
         self._parameters.append(param)
 
     def to_dict(self):
-        return {            
-            param.name:
-            {
+        return {
+            param.name: {
                 "description": param.description,
                 "type": param.type.value,
-                "required": param.required
-            } for param in self._parameters    
-        }            
-
+                "required": param.required,
+            }
+            for param in self._parameters
+        }
 
 
 class Guardrail:
@@ -174,17 +190,23 @@ class Guardrail:
 
 class Tool:
     """A tool that can be attached to an agent."""
-    def __init__(self, name: str, 
-                 description: str, 
-                 code_file_or_arn: str, 
-                 schema_dict: Dict):
+
+    def __init__(
+        self, name: str, description: str, code_file_or_arn: str, schema_dict: Dict
+    ):
         self.name = name
-        self.code_file = code_file_or_arn        
+        self.code_file = code_file_or_arn
         self.description = description
         self._schema_dict = schema_dict
 
     @classmethod
-    def create(cls, name: str, code_file: str, schema: Union[Dict, ParameterSchema], description: str = None) -> "Tool":
+    def create(
+        cls,
+        name: str,
+        code_file: str,
+        schema: Union[Dict, ParameterSchema],
+        description: str = None,
+    ) -> "Tool":
         if isinstance(schema, ParameterSchema):
             schema_dict = schema.to_dict()
         elif isinstance(schema, dict):
@@ -192,7 +214,7 @@ class Tool:
         else:
             raise TypeError(
                 f"schema must be either a dict or ParameterSchema object, not {type(schema)}"
-            )            
+            )
         return cls(name, description, code_file, schema_dict)
 
     def delete(self):
@@ -210,10 +232,11 @@ class Tool:
             "description": self.description,
             "parameters": self._schema_dict,
         }
-    
+
 
 class Toolbox:
     """Manages a collection of tools that can be used by Bedrock agents"""
+
     DEFAULT_TABLE_NAME = "bedrock_agent_tools"
 
     def __init__(self):
@@ -224,7 +247,7 @@ class Toolbox:
         """Connect to DynamoDB table"""
         if table_name is None:
             table_name = Toolbox.DEFAULT_TABLE_NAME
-        dynamodb = boto3.resource('dynamodb')
+        dynamodb = boto3.resource("dynamodb")
         return dynamodb.Table(table_name)
 
     @classmethod
@@ -234,30 +257,25 @@ class Toolbox:
         Args:
             table_name: Name of the table to create
         """
-        dynamodb = boto3.resource('dynamodb')
+        dynamodb = boto3.resource("dynamodb")
         try:
             table = dynamodb.create_table(
                 TableName=table_name,
-                KeySchema=[
-                    {'AttributeName': 'tool_name', 'KeyType': 'HASH'}
-                ],
+                KeySchema=[{"AttributeName": "tool_name", "KeyType": "HASH"}],
                 AttributeDefinitions=[
-                    {'AttributeName': 'tool_name', 'AttributeType': 'S'}
+                    {"AttributeName": "tool_name", "AttributeType": "S"}
                 ],
-                ProvisionedThroughput={
-                    'ReadCapacityUnits': 5,
-                    'WriteCapacityUnits': 5
-                }
+                ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
             )
             table.wait_until_exists()
         except ClientError as e:
-            if e.response['Error']['Code'] != 'ResourceInUseException':
+            if e.response["Error"]["Code"] != "ResourceInUseException":
                 raise
 
     @classmethod
     def _table_exists(cls, table_name: str):
         """Check that the table exists (internal)"""
-        dynamodb = boto3.resource('dynamodb')
+        dynamodb = boto3.resource("dynamodb")
         try:
             table = dynamodb.Table(table_name)
             table.load()
@@ -274,70 +292,78 @@ class Toolbox:
             print(f"Table {table_name} created successfully!")
 
     @classmethod
-    def register_tool(cls,
-                      tool_name: str,
-                      tool_code_or_arn: str,
-                      tool_definition: Dict,
-                      description: str = None,
-                      table_name=DEFAULT_TABLE_NAME) -> None:
+    def register_tool(
+        cls,
+        tool_name: str,
+        tool_code_or_arn: str,
+        tool_definition: Dict,
+        description: str = None,
+        table_name=DEFAULT_TABLE_NAME,
+    ) -> None:
         """Register a new tool in the toolbox, making it available by name to all agents"""
         tool_item = {
-            'tool_name': tool_name,
-            'tool_code': tool_code_or_arn,
-            'tool_definition': tool_definition,
-            'description': description or tool_definition.get('description', '')
+            "tool_name": tool_name,
+            "tool_code": tool_code_or_arn,
+            "tool_definition": tool_definition,
+            "description": description or tool_definition.get("description", ""),
         }
         Toolbox._ensure_table_exists(table_name)
         table = Toolbox._connect(table_name)
 
         # If tool record already exists in the table, update it
-        existing_tool = table.get_item(Key={'tool_name': tool_name}).get('Item')
+        existing_tool = table.get_item(Key={"tool_name": tool_name}).get("Item")
 
         if existing_tool:
-            existing_tool.update(tool_item)       # Override with new values
+            existing_tool.update(tool_item)  # Override with new values
             table.put_item(Item=existing_tool)
             return
 
         try:
             # Check if the code file exists (it may also contain an ARN for a lambda)
-            if tool_code_or_arn.startswith('arn:'):
+            if tool_code_or_arn.startswith("arn:"):
                 # Validate that the lambda exists
                 try:
-                    boto3.client('lambda').get_function(FunctionName=tool_code_or_arn)
+                    boto3.client("lambda").get_function(FunctionName=tool_code_or_arn)
 
                 except Exception as e:
                     raise ValueError(f"Lambda function not found: {tool_code_or_arn}")
             else:
-                raise NotImplementedError("Currently only registering existing lambdas is supported")
+                raise NotImplementedError(
+                    "Currently only registering existing lambdas is supported"
+                )
 
             table.put_item(Item=tool_item)
         except ClientError as e:
             raise Exception(f"Failed to register tool: {str(e)}")
 
     @classmethod
-    def is_registered(cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME) -> bool:
+    def is_registered(
+        cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME
+    ) -> bool:
         """Check if a tool is registered"""
         try:
             Toolbox._ensure_table_exists(table_name)
             table = Toolbox._connect(table_name)
-            response = table.get_item(Key={'tool_name': tool_name})
-            return 'Item' in response
+            response = table.get_item(Key={"tool_name": tool_name})
+            return "Item" in response
         except ResourceNotFoundException:
             return False
-     
+
     @classmethod
-    def get_tool(cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME) -> Optional[Tool]:
+    def get_tool(
+        cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME
+    ) -> Optional[Tool]:
         """Retrieve a tool by name"""
         try:
             table = Toolbox._connect(table_name)
-            response = table.get_item(Key={'tool_name': tool_name})
-            item = response.get('Item')
+            response = table.get_item(Key={"tool_name": tool_name})
+            item = response.get("Item")
             if item is None:
                 return None
-            name = item['tool_name']
-            description = item['description']
-            code = item['tool_code']
-            definition = item['tool_definition']
+            name = item["tool_name"]
+            description = item["description"]
+            code = item["tool_code"]
+            definition = item["tool_definition"]
 
             return Tool.create(name, code, definition, description)
 
@@ -350,30 +376,34 @@ class Toolbox:
         try:
             table = Toolbox._connect(table_name)
             response = table.scan()
-            return response.get('Items', [])
+            return response.get("Items", [])
         except ClientError as e:
             raise Exception(f"Failed to list tools: {str(e)}")
 
     @classmethod
-    def unregister_tool(cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME) -> None:
+    def unregister_tool(
+        cls, tool_name: str, table_name: str = DEFAULT_TABLE_NAME
+    ) -> None:
         """Delete a tool from the toolbox"""
         try:
             # First verify the item exists
             table = Toolbox._connect(table_name)
-            response = table.get_item(Key={'tool_name': tool_name})
-            if 'Item' not in response:
+            response = table.get_item(Key={"tool_name": tool_name})
+            if "Item" not in response:
                 raise Exception(f"Tool '{tool_name}' not found in table")
 
             # Delete the item
             response = table.delete_item(
-                Key={'tool_name': tool_name},
+                Key={"tool_name": tool_name},
                 # Add ReturnValues to confirm deletion
-                ReturnValues='ALL_OLD'
+                ReturnValues="ALL_OLD",
             )
 
             # Verify deletion was successful
-            if 'Attributes' not in response:
-                raise Exception(f"Tool '{tool_name}' deletion failed - no confirmation returned")
+            if "Attributes" not in response:
+                raise Exception(
+                    f"Tool '{tool_name}' deletion failed - no confirmation returned"
+                )
 
         except ClientError as e:
             raise Exception(f"Failed to delete tool: {str(e)}")
@@ -386,7 +416,7 @@ class Toolbox:
             table.delete()
             table.wait_until_not_exists()
         except ClientError as e:
-            if e.response['Error']['Code'] != 'ResourceNotFoundException':
+            if e.response["Error"]["Code"] != "ResourceNotFoundException":
                 raise
 
 
@@ -425,8 +455,12 @@ class Task:
 # define an Agent class to simplify creating and using an agent
 class Agent:
     default_force_recreate: bool = False
-    NO_TOOL_USE_INSTRUCTION = "\nYou have no available tools. Rely only on your own knowledge."
-    TOOL_USE_INSTRUCTION = ""  # Agentic models are already biased to use tools if available
+    NO_TOOL_USE_INSTRUCTION = (
+        "\nYou have no available tools. Rely only on your own knowledge."
+    )
+    TOOL_USE_INSTRUCTION = (
+        ""  # Agentic models are already biased to use tools if available
+    )
 
     @classmethod
     def set_force_recreate_default(cls, force_recreate: bool):
@@ -524,7 +558,7 @@ class Agent:
             (self.agent_id, self.agent_alias_id, self.agent_alias_arn) = (
                 agents_helper.create_agent(
                     self.name,
-                    dedent(self.instructions[0: MAX_DESCR_SIZE - 1]),
+                    dedent(self.instructions[0 : MAX_DESCR_SIZE - 1]),
                     dedent(self.instructions),
                     [self.llm],
                     code_interpretation=self.code_interpreter,
@@ -611,21 +645,25 @@ class Agent:
 
     def attach_knowledge_base(self, knowledge_base_id: str, description: str):
         """Attach a knowledge base to the agent"""
-        agents_helper.wait_agent_status_update(self.agent_id)  # wait to be out of "Versioning" state
-        agents_helper.associate_kb_with_agent(self.agent_id, description, knowledge_base_id)
+        agents_helper.wait_agent_status_update(
+            self.agent_id
+        )  # wait to be out of "Versioning" state
+        agents_helper.associate_kb_with_agent(
+            self.agent_id, description, knowledge_base_id
+        )
 
     def needs_preparation(self) -> bool:
         """Return True if the agent needs to be prepared"""
-        bedrock_agent = boto3.client('bedrock-agent')
+        bedrock_agent = boto3.client("bedrock-agent")
         response = bedrock_agent.get_agent(agentId=self.agent_id)
-        agent_info = response['agent']
+        agent_info = response["agent"]
 
         # Check if never prepared
-        prepared_at = agent_info.get('preparedAt')
+        prepared_at = agent_info.get("preparedAt")
         if not prepared_at:
             return True
 
-        last_updated = agent_info.get('updatedAt')
+        last_updated = agent_info.get("updatedAt")
         return last_updated > prepared_at
 
     def prepare(self, alias="prod"):
@@ -719,12 +757,16 @@ class Agent:
             verbose=verbose,
         )
 
-    def update(self,
-               new_model_id: str = None,
-               new_instructions: str = None,
-               guardrail_id: str = None) -> None:
+    def update(
+        self,
+        new_model_id: str = None,
+        new_instructions: str = None,
+        guardrail_id: str = None,
+    ) -> None:
         """Update supplied values for the agent"""
-        agents_helper.update_agent(self.name, new_model_id, new_instructions, guardrail_id)
+        agents_helper.update_agent(
+            self.name, new_model_id, new_instructions, guardrail_id
+        )
 
     def invoke(
         self,
@@ -735,7 +777,7 @@ class Agent:
         trace_level: str = "none",
         multi_agent_names: dict = {},
     ):
-        """Invoke the agent with the given input text"""        
+        """Invoke the agent with the given input text"""
         if self.needs_preparation():
             self.prepare()
 
@@ -797,22 +839,19 @@ class Agent:
             return final_answer
 
     def get_prepared_version(self) -> str:
-        response = bedrock_agent_client.get_agent(
-            agentId=self.agent_id
-        )
-        return response.get('agentVersion')
+        response = bedrock_agent_client.get_agent(agentId=self.agent_id)
+        return response.get("agentVersion")
 
     def has_action_group(self, action_group_name: str) -> bool:
         """Check if an agent already has a specified action group attached"""
         try:
             response = bedrock_agent_client.list_agent_action_groups(
-                agentId=self.agent_id,
-                agentVersion='DRAFT'
+                agentId=self.agent_id, agentVersion="DRAFT"
             )
 
             return any(
-                group['actionGroupName'] == action_group_name
-                for group in response['actionGroupSummaries']
+                group["actionGroupName"] == action_group_name
+                for group in response["actionGroupSummaries"]
             )
 
         except bedrock_agent_client.exceptions.ResourceNotFoundException:
@@ -841,37 +880,39 @@ class Agent:
             tool.code_file,
             tool_defs,  # One function for now, generalize to handle groups later
             tool.name,  # Using tool name as the action group name
-            f"actions for {tool.description}"
+            f"actions for {tool.description}",
         )
         # self._status = Agent.Status.NOT_PREPARED  # Force preparation on next invoke
-    
+
     def attach_tool_from_function(self, func: Callable):
         """Attach a the supplied code to this agent as a Tool"""
 
         name = func.__name__
         # Use the docstring for the description
         description = func.__doc__ or f"Tool based on function {name}"
-        
+
         # Get type hints
         type_hints = func.__annotations__
         if not type_hints:
             raise ValueError("Function must have type hints")
-        if 'return' not in type_hints:
+        if "return" not in type_hints:
             raise ValueError("Function must have a return type hint")
-        
+
         # Create parameter schema
         parameters = {}
         for param_name, param_type in type_hints.items():
-            if param_name != 'return':
+            if param_name != "return":
                 parameters[param_name] = {
                     "type": self._python_type_to_schema_type(param_type),
                     "description": f"Parameter {param_name} of type {param_type.__name__}",
-                    "required": True
+                    "required": True,
                 }
-    
+
         # Write a lambda around the code and persist it (for inline_agents, this will have to be different)
         lambda_file = agents_helper.create_lambda_file(func)
-        tool = Tool.create(name, code_file=lambda_file, schema=parameters, description=description)
+        tool = Tool.create(
+            name, code_file=lambda_file, schema=parameters, description=description
+        )
         return self.attach_tool(tool)
 
     @staticmethod
@@ -883,37 +924,41 @@ class Agent:
             float: "number",
             bool: "boolean",
             list: "array",
-            dict: "object"
+            dict: "object",
         }
-        return type_mapping.get(py_type, "string")        
+        return type_mapping.get(py_type, "string")
         tool = Tool.create_from_function(func)
         self.attach_tool(tool)
-        
+
     @classmethod
-    def create_from_yaml(cls, 
-                         name, 
-                         yaml_file: str = 'agents.yaml',
-                         guardrail: Guardrail = None,
-                         tool_code: str = None,
-                         tool_defs: List[Dict] = None,
-                         tools: List[Tool] = None,
-                         kb_id: str = None,
-                         kb_descr: str = " ",
-                         llm: str = None,
-                         verbose: bool = False):
+    def create_from_yaml(
+        cls,
+        name,
+        yaml_file: str = "agents.yaml",
+        guardrail: Guardrail = None,
+        tool_code: str = None,
+        tool_defs: List[Dict] = None,
+        tools: List[Tool] = None,
+        kb_id: str = None,
+        kb_descr: str = " ",
+        llm: str = None,
+        verbose: bool = False,
+    ):
         """Create an agent from a YAML file (default 'agents.yaml')"""
         with open(yaml_file, "r") as f:
             yaml_content = yaml.safe_load(f)
-            return Agent(name, 
-                         yaml_content=yaml_content, 
-                         guardrail=guardrail, 
-                         tool_code=tool_code, 
-                         tool_defs=tool_defs, 
-                         tools=tools, 
-                         kb_id=kb_id, 
-                         kb_descr=kb_descr, 
-                         llm=llm, 
-                         verbose=verbose)
+            return Agent(
+                name,
+                yaml_content=yaml_content,
+                guardrail=guardrail,
+                tool_code=tool_code,
+                tool_defs=tool_defs,
+                tools=tools,
+                kb_id=kb_id,
+                kb_descr=kb_descr,
+                llm=llm,
+                verbose=verbose,
+            )
 
     def attach_tool_by_name(self, tool_name: str, table_name=None):
         """Attach a Tool from the toolbox to this agent. The Tool ust be registered in the Toolbox"""
@@ -1091,7 +1136,7 @@ class SupervisorAgent:
             self.supervisor_agent_alias_arn,
         ) = agents_helper.create_agent(
             self.name,
-            dedent(self.instructions[0: MAX_DESCR_SIZE - 1]),
+            dedent(self.instructions[0 : MAX_DESCR_SIZE - 1]),
             dedent(self.instructions),
             model_ids=[self.llm],
             agent_collaboration=self.collaboration_type,
