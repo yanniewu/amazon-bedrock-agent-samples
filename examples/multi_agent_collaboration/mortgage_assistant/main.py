@@ -54,7 +54,8 @@ def main(args):
         kb_description="Useful for answering questions about mortgage refinancing and for questions comparing various mortgage types",
         data_bucket_name=bucket_name
     )
-    print(f"KB name: {kb_name}, kb_id: {kb_id}, ds_id: {ds_id}\n")
+    bucket_name = kb_helper.data_bucket_name
+    print(f"KB name: {kb_name}, kb_id: {kb_id}, ds_id: {ds_id}, s3 bucket name: {bucket_name}\n")
 
     if args.recreate_agents == "true":
         print("uploading dir")
