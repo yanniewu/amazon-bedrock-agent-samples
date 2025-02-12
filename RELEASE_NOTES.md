@@ -38,3 +38,23 @@ Renaming examples folder for simplicity and adding documentation for single agen
 12. [Agents with user confirmation before action execution](/examples/agents/user_confirmation_agents/)
 
 - [Streamlit](/examples/agents_ux/) UI demo added.
+
+## 2/9/2025
+- Following extensions added to [bedrock_agent](/src/utils/bedrock_agent.py) library 
+1. Added helper methods `delete_by_name()` and `exists()` to `Agent` to allow using `bedrock_agent` for common operations without needing to use `bedrock_agent_helper` directly
+2. Reworked `Tool` class
+3. Added `attach_tool()` to `Agent` to allow attaching tools after creation
+4. Added `attach_tool_from_function()` to Agent to create a tool from Python code with type hints (note it currently materializes a lambda from the function)
+6. Added explicit `update()` and `prepare()` methods to `Agent`
+7. Added `create_from_yaml()` to `Agent`, allows creating fom a definition in a YAML file
+
+- Following documentation added for Amazon Bedrock Agents:
+1. Added [Getting Started tutorial](/examples/sdk/getting_started.ipynb) for using the bedrock_agent library with basic usage examples and coverage of the new functions added below
+2. All examples in [multi_agent_collaboration](examples/multi_agent_collaboration/) that used both `bedrock_agent` and `bedrock_agent_helper` have been updated to just use `bedrock_agent` with `Agent` helper functions
+- Following usability improvements made to [bedrock_agent](/src/utils/bedrock_agent.py) library:
+1. Renamed `direct_create()` in `Agent` and `SupervisorAgent` to `create()` for simplicity
+2. When creating from YAML, `Agent` will automatically de-indent (dedent) the description
+3. Agent will now automatically `prepare()` internally if needed when `invoke()`, removing a step from user code
+
+- Following extensions added to [bedrock_agent_helper](/src/utils/bedrock_agent_helper.py) library:
+1. Added `create_lambda_file()`, which will create aa Lambda function from supplied Python code with type hints
