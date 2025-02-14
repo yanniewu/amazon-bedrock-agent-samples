@@ -1323,7 +1323,9 @@ class AgentsForAmazonBedrock:
     ):
         _citations = None
         if event:
-            _citations = event.get("chunk", {}).get("attribution", {}).get("citations", [])
+            _citations = (
+                event.get("chunk", {}).get("attribution", {}).get("citations", [])
+            )
         if event and _citations:
             if enable_trace:
                 print(
@@ -1354,8 +1356,10 @@ class AgentsForAmazonBedrock:
                 print(colored(f"citation_idx: {_citation_idx}", "red"))
                 print(colored(f"full citation [{_citation_idx}]: {_citation}", "red"))
 
-            _start = _citation["generatedResponsePart"]["textResponsePart"]["span"]["start"]
-            _end =   _citation["generatedResponsePart"]["textResponsePart"]["span"]["end"]
+            _start = _citation["generatedResponsePart"]["textResponsePart"]["span"][
+                "start"
+            ]
+            _end = _citation["generatedResponsePart"]["textResponsePart"]["span"]["end"]
 
             if _citation_idx == 0:
                 _answer_prefix = _cleaned_text[:_start]
@@ -1371,7 +1375,9 @@ class AgentsForAmazonBedrock:
                 _ref_url = ""
                 print(colored(f"  !!no retrieved references for citation!!", "red"))
 
-            _interim_answer = _answer_prefix + _cleaned_text[_start:_end] + " [" + _ref_url + "] "
+            _interim_answer = (
+                _answer_prefix + _cleaned_text[_start:_end] + " [" + _ref_url + "] "
+            )
             if enable_trace and trace_level == "all":
                 print(colored(f"fully cited: '{_interim_answer}'", "red"))
 
@@ -1388,7 +1394,9 @@ class AgentsForAmazonBedrock:
                 )
                 print(f"citation url: {_ref_url}\n============")
 
-        _last_end_span = _citations[len(_citations)-1]["generatedResponsePart"]["textResponsePart"]["span"]["end"]
+        _last_end_span = _citations[len(_citations) - 1]["generatedResponsePart"][
+            "textResponsePart"
+        ]["span"]["end"]
         _fully_cited_answer = _fully_cited_answer + _cleaned_text[_last_end_span:]
 
         if enable_trace and trace_level == "all":
@@ -1397,29 +1405,32 @@ class AgentsForAmazonBedrock:
         return _fully_cited_answer
 
     def invoke_inline_agent(
-            self,
-            request_params: Dict = {},
-            trace_level: str = "core",
+        self,
+        request_params: Dict = {},
+        trace_level: str = "core",
     ):
-        if 'enableTrace' in request_params:
-            enable_trace = request_params['enableTrace']
+        if "enableTrace" in request_params:
+            enable_trace = request_params["enableTrace"]
         else:
-            request_params['enableTrace'] = enable_trace = False
+            request_params["enableTrace"] = enable_trace = False
 
-        if 'sessionId' in request_params:
-            session_id = request_params['sessionId']
+        if "sessionId" in request_params:
+            session_id = request_params["sessionId"]
         else:
-            request_params['sessionId'] = session_id = str(uuid.uuid4())
+            request_params["sessionId"] = session_id = str(uuid.uuid4())
 
         _time_before_call = datetime.datetime.now()
 
         _agent_resp = self._bedrock_agent_runtime_client.invoke_inline_agent(
-            **request_params)
+            **request_params
+        )
 
-        if _agent_resp['ResponseMetadata']['RetryAttempts'] > 0:
-            print(colored(
-                f"  ** invokeAgent boto3 retries executed: {_agent_resp['ResponseMetadata']['RetryAttempts']}",
-                "red")
+        if _agent_resp["ResponseMetadata"]["RetryAttempts"] > 0:
+            print(
+                colored(
+                    f"  ** invokeAgent boto3 retries executed: {_agent_resp['ResponseMetadata']['RetryAttempts']}",
+                    "red",
+                )
             )
 
         if enable_trace:
@@ -1461,7 +1472,9 @@ class AgentsForAmazonBedrock:
                     _tmp_agent_answer = _data.decode("utf8")
                     if enable_trace and trace_level == "all":
                         # print(f"tmp answer: '{_tmp_agent_answer}', streaming: {stream_final_response}, trace: {enable_trace}")
-                        print(f"tmp answer: '{_tmp_agent_answer}', trace: {enable_trace}")
+                        print(
+                            f"tmp answer: '{_tmp_agent_answer}', trace: {enable_trace}"
+                        )
 
                     # continue to build up the full answer
                     _agent_answer += _tmp_agent_answer
@@ -1477,11 +1490,12 @@ class AgentsForAmazonBedrock:
                     # if enable_trace and stream_final_response and _num_response_chunks < 3:
                     #     print(colored(f"Answer chunk [{_num_response_chunks}]: {_tmp_agent_answer}", "blue"))
 
-
                     # print all keys in _event["chunk"] dictionary if more than just 'bytes' provided
                     if enable_trace and trace_level == "all":
                         if len(_event["chunk"].keys()) > 1:
-                            print(f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}")
+                            print(
+                                f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}"
+                            )
 
                     # remember the citations, if any are provided
                     if "attribution" in _event["chunk"]:
@@ -1507,7 +1521,7 @@ class AgentsForAmazonBedrock:
                                 _sub_agent_alias_id = _sub_agent_alias_arn.split(
                                     "/", 1
                                 )[1]
-                                _sub_agent_name = '<not yet supported with inline>' #multi_agent_names[_sub_agent_alias_id]
+                                _sub_agent_name = "<not yet supported with inline>"  # multi_agent_names[_sub_agent_alias_id]
 
                     if "routingClassifierTrace" in _event["trace"]["trace"]:
                         _route = _event["trace"]["trace"]["routingClassifierTrace"]
@@ -1760,19 +1774,35 @@ class AgentsForAmazonBedrock:
                                         )
 
                                     if "codeInterpreterInvocationOutput" in _output:
-                                        if "executionError" in _output["codeInterpreterInvocationOutput"]:
-                                            _err = _output["codeInterpreterInvocationOutput"]["executionError"]
+                                        if (
+                                            "executionError"
+                                            in _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]
+                                        ):
+                                            _err = _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]["executionError"]
                                             print(
                                                 colored(
                                                     f"--- Code interpreter execution ERROR:\n{_err}\n---\n",
-                                                    "red")
+                                                    "red",
+                                                )
                                             )
-                                        elif "executionOutput" in _output["codeInterpreterInvocationOutput"]:
-                                            _output = _output["codeInterpreterInvocationOutput"]["executionOutput"]
+                                        elif (
+                                            "executionOutput"
+                                            in _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]
+                                        ):
+                                            _output = _output[
+                                                "codeInterpreterInvocationOutput"
+                                            ]["executionOutput"]
                                             print(
                                                 colored(
                                                     f"--- Code interpreter execution OUTPUT:\n{_output}\n---\n",
-                                                    "magenta")
+                                                    "magenta",
+                                                )
                                             )
 
                                     if "knowledgeBaseLookupOutput" in _output:
@@ -1966,7 +1996,7 @@ class AgentsForAmazonBedrock:
         end_session: bool = False,
         trace_level: str = "core",
         multi_agent_names: dict = {},
-        stream_final_response: bool = False
+        stream_final_response: bool = False,
     ):
         """Invokes an agent with a given input text, while optional parameters
         also let you leverage an agent session, or target a specific agent alias.
@@ -1995,7 +2025,7 @@ class AgentsForAmazonBedrock:
             sessionState=session_state,
             enableTrace=enable_trace,
             endSession=end_session,
-            streamingConfigurations={"streamFinalResponse":stream_final_response}
+            streamingConfigurations={"streamFinalResponse": stream_final_response},
         )
 
         if enable_trace:
@@ -2037,24 +2067,44 @@ class AgentsForAmazonBedrock:
                     _data = _event["chunk"]["bytes"]
                     _tmp_agent_answer = _data.decode("utf8")
                     if enable_trace and trace_level == "all":
-                        print(f"tmp answer: '{_tmp_agent_answer}', streaming: {stream_final_response}, trace: {enable_trace}")
+                        print(
+                            f"tmp answer: '{_tmp_agent_answer}', streaming: {stream_final_response}, trace: {enable_trace}"
+                        )
 
                     # continue to build up the full answer
                     _agent_answer += _tmp_agent_answer
 
                     if _num_response_chunks == 0:
-                        _time_to_first_token = datetime.datetime.now() - _overall_start_time
+                        _time_to_first_token = (
+                            datetime.datetime.now() - _overall_start_time
+                        )
                         if enable_trace and stream_final_response:
-                            print(colored(f"Time to first token: {_time_to_first_token.total_seconds():,.1f}s\n", "yellow"))
+                            print(
+                                colored(
+                                    f"Time to first token: {_time_to_first_token.total_seconds():,.1f}s\n",
+                                    "yellow",
+                                )
+                            )
                     _num_response_chunks += 1
 
-                    if enable_trace and stream_final_response and _num_response_chunks < 3:
-                        print(colored(f"Answer chunk [{_num_response_chunks}]: {_tmp_agent_answer}", "blue"))
+                    if (
+                        enable_trace
+                        and stream_final_response
+                        and _num_response_chunks < 3
+                    ):
+                        print(
+                            colored(
+                                f"Answer chunk [{_num_response_chunks}]: {_tmp_agent_answer}",
+                                "blue",
+                            )
+                        )
 
                     # print all keys in _event["chunk"] dictionary if more than just 'bytes' provided
                     if enable_trace and trace_level == "all":
                         if len(_event["chunk"].keys()) > 1:
-                            print(f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}")
+                            print(
+                                f"chunk keys beyond just 'bytes': {list(_event['chunk'].keys())}"
+                            )
 
                     # remember the citations, if any are provided
                     if "attribution" in _event["chunk"]:
@@ -2768,14 +2818,14 @@ class AgentsForAmazonBedrock:
             "from typing import Any, Dict",
             "",
             "def get_named_parameter(event: Dict[str, Any], name: str) -> Any:",
-            "    \"\"\"Extract a named parameter from the event object.\"\"\"",
+            '    """Extract a named parameter from the event object."""',
             "    if 'parameters' in event:",
             "        return next(item for item in event['parameters'] if item['name'] == name)['value']",
             "    else:",
             "        return None",
             "",
             "def populate_function_response(event: Dict[str, Any], response_body: Any) -> Dict[str, Any]:",
-            "    \"\"\"Create the response structure expected by the agent.\"\"\"",
+            '    """Create the response structure expected by the agent."""',
             "    return {",
             "        'response': {",
             "            'actionGroup': event['actionGroup'],",
