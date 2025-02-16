@@ -4,16 +4,20 @@ This solution provides a Generative AI Application reference that is able to acc
 
 **Also, you can change the data source to connect to your preferred database engine by adapting the Agent's instructions and the Lambda function logic.**
 
-> IMPORTANT: This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> [!IMPORTANT]
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
 
-> IMPORTANT: Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> [!IMPORTANT]
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
-> **RECOMMENDATION: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+> [!TIP]
+> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
 
 ![Video Games Sales Assistant](./images/preview.png)
 
 ## Deploying the Sample Generative AI Application
 
+> [!NOTE]
 > *It is recommended to use the Oregon (us-west-2) or N. Virginia (us-east-1) regions to deploy the application.*
 
 To deploy the application, please follow these two steps:
@@ -44,3 +48,7 @@ The following images are part of a conversation analysis that includes the natur
 **The chart generated using the agent's answer and the record results from the SQL Query (charts created using [Apexcharts](https://apexcharts.com/))**
 
 ![Video Games Sales Assistant](./images/preview4.png)
+
+## License
+
+This project is licensed under the Apache-2.0 License.
