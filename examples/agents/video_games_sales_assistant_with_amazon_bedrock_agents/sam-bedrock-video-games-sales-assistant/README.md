@@ -91,7 +91,7 @@ python3 resources/create-sales-database.py
 ## Amazon Bedrock Agent Creation
 
 > [!IMPORTANT] 
-> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
 
 Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
 
