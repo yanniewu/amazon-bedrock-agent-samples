@@ -4,9 +4,11 @@ This tutorial guides you through the process of setting up a React front-end app
 
 By the end of this tutorial, you'll have a fully functional web application that allows a guest user to interact with a conversational AI agent for video game sales assistance.
 
-> IMPORTANT: This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> [!IMPORTANT]
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
 
-> IMPORTANT: Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> [!IMPORTANT]
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
@@ -141,3 +143,7 @@ amplify delete
 Do not forget to [remove your IAM User](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_remove.html) and Access keys for your front-end application.
 
 ## Thank You
+
+## License
+
+This project is licensed under the Apache-2.0 License.

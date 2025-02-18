@@ -58,7 +58,8 @@ SELECT aws_s3.table_import_from_s3(
 
 ## Create the Amazon Bedrock Agent
 
-> **IMPORTANT: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+> [!IMPORTANT] 
+> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
 
 Go to the **Amazon Bedrock** service and select **Agents** from the menu in the **Builder tools** section. Click on **Create Agent** and provide the following name:
 
@@ -292,3 +293,9 @@ Now you can go back to your Amazon Bedrock Agent,, in the **Agent builder** sect
 ## Create Alias Agent Application
 
 To use the Agent application, once you have a **Prepared** version for testing, go to your **Agent overview** and click on **Create Alias** to use it from your front-end application.
+
+## Thank You
+
+## License
+
+This project is licensed under the Apache-2.0 License.

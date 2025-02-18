@@ -4,14 +4,17 @@ This tutorial guides you through the process of setting up the back-end using AW
 
 By the end of this tutorial, you'll have the Amazon Bedrock Agent working in the AWS Console for testing purposes.
 
-> IMPORTANT: This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
+> [!IMPORTANT]
+> This sample application is meant for demo purposes and is not production ready. Please make sure to validate the code with your organizations security best practices.
 
-> IMPORTANT: Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
+> [!IMPORTANT]
+> Clean up resources after you test the demo to avoid unnecessary costs. Follow the clean-up steps provided.
 
 ## Prerequisites
 
 * SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * [Python 3.9 or a later major version installed](https://www.python.org/downloads/) 
+* [Boto3 1.36 or a later major version installed](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html)
 * Anthropic Claude 3.5 Haiku and Sonnet enabled in Amazon Bedrock.
 
 ## SAM Deployment
@@ -46,9 +49,8 @@ After uploading the SAM project and changeset created:
 
 - Deploy this changeset? [y/N]: **Y**
 
-> If you prefer, you can continue creating the following resources manually [here](./manual_database_data_load_and_agent_creation.md).
-
-After completing the SAM deployment, execute the following commands to save the environment variables for use in subsequent configurations.
+> [!TIP]
+> Alternatively, you can choose to follow [this manual](./manual_database_data_load_and_agent_creation.md) to continue creating the Amazon Bedrock Agent step-by-step in the AWS Console. Otherwise, continue with the instructions below.
 
 ``` bash
 # Set the stack name environment variable
@@ -79,7 +81,7 @@ EOF
 
 ## Loading Data Sample to the PostgreSQL Databae
 
-> Execute the following command to create the database and load the data source.
+Execute the following command to create the database and load the data source.
 
 ``` bash
 pip install boto3
@@ -88,7 +90,8 @@ python3 resources/create-sales-database.py
 
 ## Amazon Bedrock Agent Creation
 
-> **IMPORTANT: Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.**
+> [!IMPORTANT] 
+> Enhance AI safety and compliance by implementing [Amazon Bedrock Guardrails](https://aws.amazon.com/bedrock/guardrails/) for your AI applications.
 
 Execute the following command to create the Amazon Bedrock Agent. This step will take about 30 seconds.
 
@@ -157,3 +160,7 @@ sam delete
 ```
 
 ## Thank You
+
+## License
+
+This project is licensed under the Apache-2.0 License.
