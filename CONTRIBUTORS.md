@@ -8,3 +8,4 @@
 - [Omar Elkharbotly](https://github.com/omrsamer)
 - [Uriel Ramirez](https://github.com/aurbac)
 - [Aidan Ricci](https://github.com/aidan-ricci)
+- [Yannie Wu](https://github.com/yanniewu)
