@@ -1,3 +1,7 @@
+## 02/27/2025
+
+Created a project called metadata-filtering-amazon-bedrock-agents in examples/agents
+
 ## 02/18/2025
 Added to 
 [Agent using models not yet optimized for Bedrock Agents](/examples/agents/agent_with_models_not_yet_optimized_for_bedrock_agents/)
